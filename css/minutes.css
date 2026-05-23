@@ -1,0 +1,87 @@
+.bmlt-minutes {
+	font-size: 15px;
+	line-height: 1.5;
+}
+
+.bmlt-minutes--empty {
+	padding: 1em;
+	color: #666;
+	font-style: italic;
+}
+
+.bmlt-minutes__group {
+	margin: 1.5em 0 0.5em;
+	padding-bottom: 0.25em;
+	border-bottom: 1px solid #e5e5e5;
+	font-size: 1.15em;
+}
+
+.bmlt-minutes__list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.bmlt-minutes__item {
+	border-bottom: 1px solid #f0f0f0;
+	padding: 0.5em 0;
+}
+
+.bmlt-minutes__item:last-child {
+	border-bottom: none;
+}
+
+.bmlt-minutes__link {
+	display: flex;
+	align-items: center;
+	gap: 0.5em;
+	text-decoration: none;
+	color: inherit;
+}
+
+.bmlt-minutes__link:hover .bmlt-minutes__title {
+	text-decoration: underline;
+}
+
+.bmlt-minutes__icon {
+	color: #555;
+	flex-shrink: 0;
+}
+
+.bmlt-minutes__title {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+.bmlt-minutes__type {
+	font-size: 0.75em;
+	font-weight: 600;
+	letter-spacing: 0.05em;
+	padding: 0.15em 0.5em;
+	border-radius: 3px;
+	background: #f0f0f0;
+	color: #444;
+	text-transform: uppercase;
+}
+
+.bmlt-minutes__date {
+	font-size: 0.85em;
+	color: #777;
+	white-space: nowrap;
+}
+
+.bmlt-minutes__excerpt {
+	margin: 0.25em 0 0.5em 1.75em;
+	color: #555;
+	font-size: 0.9em;
+}
+
+@media (max-width: 480px) {
+	.bmlt-minutes__link {
+		flex-wrap: wrap;
+	}
+	.bmlt-minutes__date {
+		flex-basis: 100%;
+		margin-left: 1.75em;
+	}
+}

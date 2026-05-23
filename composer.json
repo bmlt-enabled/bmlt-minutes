@@ -1,0 +1,23 @@
+{
+  "name": "bmlt-enabled/minutes",
+  "description": "Meeting Minutes WordPress plugin - publish NA service committee minutes (PDF/DOCX/XLSX/Google Doc links).",
+  "type": "project",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "bmlt-enabled"
+    }
+  ],
+  "require-dev": {
+    "squizlabs/php_codesniffer": "^3.13",
+    "wp-coding-standards/wpcs": "^3.3"
+  },
+  "config": {
+    "allow-plugins": {
+      "dealerdirect/phpcodesniffer-composer-installer": true
+    },
+    "platform": {
+      "php": "8.3.0"
+    }
+  }
+}
