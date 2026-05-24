@@ -1,4 +1,4 @@
-=== Minutes ===
+=== BMLT Minutes ===
 
 Contributors: bmltenabled, pjaudiomv
 Tags: meeting minutes, pdf, documents, agenda, bmlt
@@ -13,7 +13,7 @@ Publish service committee meeting minutes (PDF, DOCX, XLSX, Google Doc links) wi
 
 == Description ==
 
-Minutes is a lightweight WordPress plugin for service bodies and committees to publish meeting minutes on their website. Most committees produce PDFs, Word docs, spreadsheets, or Google Doc links every month, and need a clean way to organize them by committee and date. Built for the bmlt-enabled community but useful for any organization that needs a tidy minutes archive.
+BMLT Minutes is a lightweight WordPress plugin for service bodies and committees to publish meeting minutes on their website. Most committees produce PDFs, Word docs, spreadsheets, or Google Doc links every month, and need a clean way to organize them by committee and date. Built for the bmlt-enabled community but useful for any organization that needs a tidy minutes archive.
 
 Features:
 
@@ -52,7 +52,7 @@ Shortcode attributes:
 
 == Installation ==
 
-1. Upload the plugin files to `/wp-content/plugins/minutes/`, or install via the Plugins screen.
+1. Upload the plugin files to `/wp-content/plugins/bmlt-minutes/`, or install via the Plugins screen.
 2. Activate the plugin through the Plugins screen in WordPress.
 3. (Optional) Open **Minutes → Settings** to set your BMLT server URL and default sort.
 4. Add minutes under **Minutes → Add New** — upload a file or paste a Google Doc / external link, choose a committee, set the meeting date, publish.

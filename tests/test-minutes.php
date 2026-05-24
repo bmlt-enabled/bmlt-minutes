@@ -1,6 +1,6 @@
 <?php
 /**
- * Tests for the Minutes plugin.
+ * Tests for the BMLT Minutes plugin.
  */
 
 class Test_BMLT_Minutes extends WP_UnitTestCase {

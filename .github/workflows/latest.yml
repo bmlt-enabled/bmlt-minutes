@@ -73,10 +73,10 @@ jobs:
     env:
       SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
       S3_BUCKET: archives.bmlt.app
-      S3_KEY: minutes
+      S3_KEY: bmlt-minutes
       BUILD_DIR: build
       DIST_DIR_S3: dist/s3
-      PLUGIN: "minutes"
+      PLUGIN: "bmlt-minutes"
     needs: [ lint, test ]
     steps:
       - name: Check out code 🛒

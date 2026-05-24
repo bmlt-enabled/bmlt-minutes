@@ -68,8 +68,8 @@ jobs:
     env:
       BUILD_DIR: "build"
       DIST_DIR_GITHUB: "dist/github"
-      GITHUB_RELEASE_FILENAME: "minutes.zip"
-      PLUGIN: minutes
+      GITHUB_RELEASE_FILENAME: "bmlt-minutes.zip"
+      PLUGIN: bmlt-minutes
       MAINFILE: "minutes.php"
     needs: [lint, test]
     permissions:

@@ -2,7 +2,7 @@
 
 ## Supported Versions
 
-Only the latest release of Minutes receives security updates.
+Only the latest release of BMLT Minutes receives security updates.
 
 | Version | Supported |
 | ------- | --------- |

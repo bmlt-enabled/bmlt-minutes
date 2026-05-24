@@ -2,13 +2,13 @@
   <img src="minutes-logo.svg" alt="Minutes logo" width="128" height="128">
 </p>
 
-# Minutes for WordPress
+# BMLT Minutes for WordPress
 
-[![WordPress Plugin](https://img.shields.io/wordpress/plugin/v/minutes)](https://wordpress.org/plugins/minutes/)
-[![WordPress Tested](https://img.shields.io/wordpress/plugin/tested/minutes)](https://wordpress.org/plugins/minutes/)
-[![PHP Version](https://img.shields.io/wordpress/plugin/required-php/minutes)](https://wordpress.org/plugins/minutes/)
+[![WordPress Plugin](https://img.shields.io/wordpress/plugin/v/bmlt-minutes)](https://wordpress.org/plugins/bmlt-minutes/)
+[![WordPress Tested](https://img.shields.io/wordpress/plugin/tested/bmlt-minutes)](https://wordpress.org/plugins/bmlt-minutes/)
+[![PHP Version](https://img.shields.io/wordpress/plugin/required-php/bmlt-minutes)](https://wordpress.org/plugins/bmlt-minutes/)
 
-[WordPress plugin](https://wordpress.org/plugins/minutes/) for service bodies and committees to publish meeting minutes — PDFs, DOCX, XLSX, or links to Google Docs / Dropbox / OneDrive — via a single shortcode. Built by the [bmlt-enabled](https://bmlt.app) community.
+[WordPress plugin](https://wordpress.org/plugins/bmlt-minutes/) for service bodies and committees to publish meeting minutes — PDFs, DOCX, XLSX, or links to Google Docs / Dropbox / OneDrive — via a single shortcode. Built by the [bmlt-enabled](https://bmlt.app) community.
 
 ## Usage
 
@@ -25,7 +25,7 @@ Filter, limit, or change the grouping per-page:
 
 ## Installation
 
-1. Upload to `/wp-content/plugins/minutes/`
+1. Upload to `/wp-content/plugins/bmlt-minutes/`
 2. Activate in WordPress admin
 3. Add minutes under **Minutes → Add New** — upload a file or paste a Google Doc URL, choose a committee, set the meeting date
 4. Add `[minutes]` to any page or post

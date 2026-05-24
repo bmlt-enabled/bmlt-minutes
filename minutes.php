@@ -1,14 +1,14 @@
 <?php
 /**
- * Plugin Name: Minutes
- * Plugin URI: https://wordpress.org/plugins/minutes/
+ * Plugin Name: BMLT Minutes
+ * Plugin URI: https://wordpress.org/plugins/bmlt-minutes/
  * Description: Publish NA service committee meeting minutes (PDF, DOCX, XLSX, Google Doc links) with a simple shortcode.
  * Version: 1.0.0
  * Author: bmltenabled
  * Author URI: https://bmlt.app
  * License: GPL v2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain: minutes
+ * Text Domain: bmlt-minutes
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -127,17 +127,17 @@ class BMLT_Minutes {
 			self::CPT,
 			[
 				'labels'        => [
-					'name'               => __( 'Meeting Minutes', 'minutes' ),
-					'singular_name'      => __( 'Meeting Minutes', 'minutes' ),
-					'add_new'            => __( 'Add New', 'minutes' ),
-					'add_new_item'       => __( 'Add New Minutes', 'minutes' ),
-					'edit_item'          => __( 'Edit Minutes', 'minutes' ),
-					'new_item'           => __( 'New Minutes', 'minutes' ),
-					'view_item'          => __( 'View Minutes', 'minutes' ),
-					'search_items'       => __( 'Search Minutes', 'minutes' ),
-					'not_found'          => __( 'No minutes found.', 'minutes' ),
-					'not_found_in_trash' => __( 'No minutes found in trash.', 'minutes' ),
-					'menu_name'          => __( 'Minutes', 'minutes' ),
+					'name'               => __( 'Meeting Minutes', 'bmlt-minutes' ),
+					'singular_name'      => __( 'Meeting Minutes', 'bmlt-minutes' ),
+					'add_new'            => __( 'Add New', 'bmlt-minutes' ),
+					'add_new_item'       => __( 'Add New Minutes', 'bmlt-minutes' ),
+					'edit_item'          => __( 'Edit Minutes', 'bmlt-minutes' ),
+					'new_item'           => __( 'New Minutes', 'bmlt-minutes' ),
+					'view_item'          => __( 'View Minutes', 'bmlt-minutes' ),
+					'search_items'       => __( 'Search Minutes', 'bmlt-minutes' ),
+					'not_found'          => __( 'No minutes found.', 'bmlt-minutes' ),
+					'not_found_in_trash' => __( 'No minutes found in trash.', 'bmlt-minutes' ),
+					'menu_name'          => __( 'Minutes', 'bmlt-minutes' ),
 				],
 				'public'        => true,
 				'show_ui'       => true,
@@ -159,11 +159,11 @@ class BMLT_Minutes {
 			self::CPT,
 			[
 				'labels'            => [
-					'name'          => __( 'Committees', 'minutes' ),
-					'singular_name' => __( 'Committee', 'minutes' ),
-					'menu_name'     => __( 'Committees', 'minutes' ),
-					'add_new_item'  => __( 'Add New Committee', 'minutes' ),
-					'edit_item'     => __( 'Edit Committee', 'minutes' ),
+					'name'          => __( 'Committees', 'bmlt-minutes' ),
+					'singular_name' => __( 'Committee', 'bmlt-minutes' ),
+					'menu_name'     => __( 'Committees', 'bmlt-minutes' ),
+					'add_new_item'  => __( 'Add New Committee', 'bmlt-minutes' ),
+					'edit_item'     => __( 'Edit Committee', 'bmlt-minutes' ),
 				],
 				'hierarchical'      => true,
 				'show_ui'           => true,
@@ -227,7 +227,7 @@ class BMLT_Minutes {
 	public static function add_meta_boxes(): void {
 		add_meta_box(
 			'bmlt_minutes_document',
-			__( 'Minutes Document', 'minutes' ),
+			__( 'Minutes Document', 'bmlt-minutes' ),
 			[ static::class, 'render_meta_box' ],
 			self::CPT,
 			'normal',
@@ -248,15 +248,15 @@ class BMLT_Minutes {
 		?>
 		<table class="form-table">
 			<tr>
-				<th scope="row"><label for="bmlt_minutes_date"><?php esc_html_e( 'Meeting Date', 'minutes' ); ?></label></th>
+				<th scope="row"><label for="bmlt_minutes_date"><?php esc_html_e( 'Meeting Date', 'bmlt-minutes' ); ?></label></th>
 				<td>
 					<input type="date" id="bmlt_minutes_date" name="bmlt_minutes_date"
 						   value="<?php echo esc_attr( $date ); ?>" class="regular-text" />
-					<p class="description"><?php esc_html_e( 'The date the meeting took place (used for sorting and grouping).', 'minutes' ); ?></p>
+					<p class="description"><?php esc_html_e( 'The date the meeting took place (used for sorting and grouping).', 'bmlt-minutes' ); ?></p>
 				</td>
 			</tr>
 			<tr>
-				<th scope="row"><?php esc_html_e( 'Attached File', 'minutes' ); ?></th>
+				<th scope="row"><?php esc_html_e( 'Attached File', 'bmlt-minutes' ); ?></th>
 				<td>
 					<input type="hidden" id="bmlt_minutes_attachment_id" name="bmlt_minutes_attachment_id"
 						   value="<?php echo esc_attr( (string) $attachment_id ); ?>" />
@@ -265,38 +265,38 @@ class BMLT_Minutes {
 							<span class="dashicons dashicons-media-document" style="vertical-align:middle;"></span>
 							<a href="<?php echo esc_url( $attachment_url ); ?>" target="_blank" rel="noopener"><?php echo esc_html( $attachment_filename ); ?></a>
 						<?php else : ?>
-							<em><?php esc_html_e( 'No file selected.', 'minutes' ); ?></em>
+							<em><?php esc_html_e( 'No file selected.', 'bmlt-minutes' ); ?></em>
 						<?php endif; ?>
 					</div>
-					<button type="button" class="button" id="bmlt_minutes_pick_file"><?php esc_html_e( 'Upload / Select File', 'minutes' ); ?></button>
-					<button type="button" class="button" id="bmlt_minutes_clear_file" <?php disabled( ! $attachment_id ); ?>><?php esc_html_e( 'Remove File', 'minutes' ); ?></button>
+					<button type="button" class="button" id="bmlt_minutes_pick_file"><?php esc_html_e( 'Upload / Select File', 'bmlt-minutes' ); ?></button>
+					<button type="button" class="button" id="bmlt_minutes_clear_file" <?php disabled( ! $attachment_id ); ?>><?php esc_html_e( 'Remove File', 'bmlt-minutes' ); ?></button>
 					<p class="description">
-						<?php esc_html_e( 'PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, ODT, ODS, TXT, RTF, CSV.', 'minutes' ); ?>
+						<?php esc_html_e( 'PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, ODT, ODS, TXT, RTF, CSV.', 'bmlt-minutes' ); ?>
 						<?php
 						/* translators: %s: maximum upload size, e.g. "10 MB" */
-						printf( esc_html__( 'Maximum file size: %s.', 'minutes' ), esc_html( size_format( self::max_upload_bytes() ) ) );
+						printf( esc_html__( 'Maximum file size: %s.', 'bmlt-minutes' ), esc_html( size_format( self::max_upload_bytes() ) ) );
 						?>
 					</p>
 				</td>
 			</tr>
 			<tr>
-				<th scope="row"><label for="bmlt_minutes_url"><?php esc_html_e( 'External Link', 'minutes' ); ?></label></th>
+				<th scope="row"><label for="bmlt_minutes_url"><?php esc_html_e( 'External Link', 'bmlt-minutes' ); ?></label></th>
 				<td>
 					<input type="url" id="bmlt_minutes_url" name="bmlt_minutes_url"
 						   value="<?php echo esc_attr( $url ); ?>"
 						   class="large-text" placeholder="https://docs.google.com/document/d/..." />
-					<p class="description"><?php esc_html_e( 'Alternative to an uploaded file — e.g. a Google Doc, Dropbox, or OneDrive link. If both are set, the uploaded file takes priority.', 'minutes' ); ?></p>
+					<p class="description"><?php esc_html_e( 'Alternative to an uploaded file — e.g. a Google Doc, Dropbox, or OneDrive link. If both are set, the uploaded file takes priority.', 'bmlt-minutes' ); ?></p>
 				</td>
 			</tr>
 			<tr>
-				<th scope="row"><label for="bmlt_minutes_password"><?php esc_html_e( 'Password Protection', 'minutes' ); ?></label></th>
+				<th scope="row"><label for="bmlt_minutes_password"><?php esc_html_e( 'Password Protection', 'bmlt-minutes' ); ?></label></th>
 				<td>
 					<input type="text" id="bmlt_minutes_password" name="bmlt_minutes_password"
 						   value="<?php echo esc_attr( $password ); ?>"
 						   class="regular-text" autocomplete="off"
-						   placeholder="<?php esc_attr_e( 'Leave blank for public access', 'minutes' ); ?>" />
+						   placeholder="<?php esc_attr_e( 'Leave blank for public access', 'bmlt-minutes' ); ?>" />
 					<p class="description">
-						<?php esc_html_e( 'Optional. If set, visitors must enter this password to view the document. Useful for minutes containing personal details that have not been redacted. Share the password with members through your usual channels.', 'minutes' ); ?>
+						<?php esc_html_e( 'Optional. If set, visitors must enter this password to view the document. Useful for minutes containing personal details that have not been redacted. Share the password with members through your usual channels.', 'bmlt-minutes' ); ?>
 					</p>
 				</td>
 			</tr>
@@ -374,8 +374,8 @@ class BMLT_Minutes {
 		foreach ( $columns as $key => $label ) {
 			$new[ $key ] = $label;
 			if ( 'title' === $key ) {
-				$new['bmlt_minutes_date'] = __( 'Meeting Date', 'minutes' );
-				$new['bmlt_minutes_file'] = __( 'File / Link', 'minutes' );
+				$new['bmlt_minutes_date'] = __( 'Meeting Date', 'bmlt-minutes' );
+				$new['bmlt_minutes_file'] = __( 'File / Link', 'bmlt-minutes' );
 			}
 		}
 		return $new;
@@ -500,7 +500,7 @@ class BMLT_Minutes {
 		if ( '' === $url ) {
 			return $content;
 		}
-		wp_enqueue_style( 'minutes' );
+		wp_enqueue_style( 'bmlt-minutes' );
 
 		$date_raw = (string) get_post_meta( $post_id, self::META_DATE, true );
 		$date_html = '';
@@ -508,7 +508,7 @@ class BMLT_Minutes {
 			$date_display = mysql2date( get_option( 'date_format', 'F j, Y' ), $date_raw, true );
 			$date_html    = sprintf(
 				'<p class="bmlt-minutes__single-date"><strong>%s</strong> %s</p>',
-				esc_html__( 'Meeting Date:', 'minutes' ),
+				esc_html__( 'Meeting Date:', 'bmlt-minutes' ),
 				esc_html( $date_display )
 			);
 		}
@@ -518,7 +518,7 @@ class BMLT_Minutes {
 			'<p class="bmlt-minutes__single-link"><a class="bmlt-minutes__button" href="%s" target="_blank" rel="noopener"><span class="dashicons %s" aria-hidden="true"></span> %s</a></p>',
 			esc_url( $url ),
 			esc_attr( $icon ),
-			esc_html__( 'View Document', 'minutes' )
+			esc_html__( 'View Document', 'bmlt-minutes' )
 		);
 
 		return $date_html . $content . $link_html;
@@ -548,13 +548,13 @@ class BMLT_Minutes {
 			'bmlt-minutes-admin',
 			'BMLT_MINUTES_ADMIN',
 			[
-				'pickTitle'    => __( 'Select or upload minutes document', 'minutes' ),
-				'pickButton'   => __( 'Use this file', 'minutes' ),
+				'pickTitle'    => __( 'Select or upload minutes document', 'bmlt-minutes' ),
+				'pickButton'   => __( 'Use this file', 'bmlt-minutes' ),
 				'allowedExt'   => self::ALLOWED_EXTENSIONS,
-				'noFileLabel'  => __( 'No file selected.', 'minutes' ),
+				'noFileLabel'  => __( 'No file selected.', 'bmlt-minutes' ),
 				'maxUpload'    => self::max_upload_bytes(),
 				/* translators: %s: maximum upload size, e.g. "10 MB" */
-				'tooLargeMsg'  => sprintf( __( 'That file is larger than the %s limit for minutes uploads.', 'minutes' ), size_format( self::max_upload_bytes() ) ),
+				'tooLargeMsg'  => sprintf( __( 'That file is larger than the %s limit for minutes uploads.', 'bmlt-minutes' ), size_format( self::max_upload_bytes() ) ),
 			]
 		);
 	}
@@ -603,7 +603,7 @@ class BMLT_Minutes {
 		if ( isset( $file['size'] ) && (int) $file['size'] > self::max_upload_bytes() ) {
 			$file['error'] = sprintf(
 				/* translators: %s: maximum upload size, e.g. "10 MB" */
-				__( 'File is too large. Minutes uploads are capped at %s.', 'minutes' ),
+				__( 'File is too large. Minutes uploads are capped at %s.', 'bmlt-minutes' ),
 				size_format( self::max_upload_bytes() )
 			);
 		}
@@ -648,7 +648,7 @@ class BMLT_Minutes {
 
 	public static function frontend_assets(): void {
 		wp_register_style(
-			'minutes',
+			'bmlt-minutes',
 			BMLT_MINUTES_URL . 'css/minutes.css',
 			[ 'dashicons' ],
 			BMLT_MINUTES_VERSION
@@ -670,10 +670,10 @@ class BMLT_Minutes {
 				'show_excerpt' => 'false',
 			],
 			is_array( $atts ) ? $atts : [],
-			'minutes'
+			'bmlt-minutes'
 		);
 
-		wp_enqueue_style( 'minutes' );
+		wp_enqueue_style( 'bmlt-minutes' );
 
 		// phpcs:disable WordPress.DB.SlowDBQuery.slow_db_query_meta_key,WordPress.DB.SlowDBQuery.slow_db_query_tax_query,WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- A minutes archive inherently needs to filter by committee taxonomy and meeting-date meta. Site owners can add an index on _bmlt_minutes_date if their dataset is huge; for a typical service-body list this is fine.
 		$args = [
@@ -713,7 +713,7 @@ class BMLT_Minutes {
 
 		$query = new WP_Query( $args );
 		if ( ! $query->have_posts() ) {
-			return '<div class="bmlt-minutes bmlt-minutes--empty">' . esc_html__( 'No minutes published yet.', 'minutes' ) . '</div>';
+			return '<div class="bmlt-minutes bmlt-minutes--empty">' . esc_html__( 'No minutes published yet.', 'bmlt-minutes' ) . '</div>';
 		}
 
 		$group_by    = in_array( (string) $atts['group_by'], [ 'committee', 'year', 'none' ], true ) ? (string) $atts['group_by'] : 'committee';
@@ -756,7 +756,7 @@ class BMLT_Minutes {
 	private static function primary_committee_label( int $post_id ): string {
 		$terms = get_the_terms( $post_id, self::TAX_COMMITTEE );
 		if ( ! is_array( $terms ) || empty( $terms ) ) {
-			return __( 'Uncategorized', 'minutes' );
+			return __( 'Uncategorized', 'bmlt-minutes' );
 		}
 		return (string) $terms[0]->name;
 	}
@@ -767,7 +767,7 @@ class BMLT_Minutes {
 			$date = get_the_date( 'Y-m-d', $post_id );
 		}
 		$ts = strtotime( $date );
-		return $ts ? gmdate( 'Y', $ts ) : __( 'Undated', 'minutes' );
+		return $ts ? gmdate( 'Y', $ts ) : __( 'Undated', 'bmlt-minutes' );
 	}
 
 	private static function render_item( WP_Post $post, bool $show_excerpt ): string {
@@ -799,7 +799,7 @@ class BMLT_Minutes {
 				<span class="bmlt-minutes__icon dashicons <?php echo esc_attr( $icon ); ?>" aria-hidden="true"></span>
 				<span class="bmlt-minutes__title"><?php echo esc_html( get_the_title( $post ) ); ?></span>
 				<?php if ( $is_locked ) : ?>
-					<span class="bmlt-minutes__type bmlt-minutes__type--locked"><?php esc_html_e( 'Protected', 'minutes' ); ?></span>
+					<span class="bmlt-minutes__type bmlt-minutes__type--locked"><?php esc_html_e( 'Protected', 'bmlt-minutes' ); ?></span>
 				<?php elseif ( '' !== $ext_label ) : ?>
 					<span class="bmlt-minutes__type"><?php echo esc_html( $ext_label ); ?></span>
 				<?php endif; ?>
@@ -831,8 +831,8 @@ class BMLT_Minutes {
 	public static function admin_menu(): void {
 		add_submenu_page(
 			'edit.php?post_type=' . self::CPT,
-			__( 'Minutes Settings', 'minutes' ),
-			__( 'Settings', 'minutes' ),
+			__( 'BMLT Minutes Settings', 'bmlt-minutes' ),
+			__( 'Settings', 'bmlt-minutes' ),
 			'manage_options',
 			'bmlt-minutes-settings',
 			[ static::class, 'settings_page' ]
@@ -864,7 +864,7 @@ class BMLT_Minutes {
 		$server_cap_mb  = (int) floor( wp_max_upload_size() / ( 1024 * 1024 ) );
 		?>
 		<div class="wrap">
-			<h1><?php esc_html_e( 'Minutes Settings', 'minutes' ); ?></h1>
+			<h1><?php esc_html_e( 'BMLT Minutes Settings', 'bmlt-minutes' ); ?></h1>
 
 			<?php settings_errors(); ?>
 
@@ -873,49 +873,49 @@ class BMLT_Minutes {
 
 				<table class="form-table">
 					<tr>
-						<th scope="row"><label for="bmlt_minutes_server"><?php esc_html_e( 'BMLT Server URL', 'minutes' ); ?></label></th>
+						<th scope="row"><label for="bmlt_minutes_server"><?php esc_html_e( 'BMLT Server URL', 'bmlt-minutes' ); ?></label></th>
 						<td>
 							<input type="url" id="bmlt_minutes_server" name="bmlt_minutes_server"
 								   value="<?php echo esc_attr( $server ); ?>"
 								   class="regular-text" placeholder="https://your-server/main_server/" />
-							<p class="description"><?php esc_html_e( 'Optional. Used for service body lookups and documentation links.', 'minutes' ); ?></p>
+							<p class="description"><?php esc_html_e( 'Optional. Used for service body lookups and documentation links.', 'bmlt-minutes' ); ?></p>
 						</td>
 					</tr>
 					<tr>
-						<th scope="row"><label for="bmlt_minutes_service_body"><?php esc_html_e( 'Service Body ID', 'minutes' ); ?></label></th>
+						<th scope="row"><label for="bmlt_minutes_service_body"><?php esc_html_e( 'Service Body ID', 'bmlt-minutes' ); ?></label></th>
 						<td>
 							<input type="text" id="bmlt_minutes_service_body" name="bmlt_minutes_service_body"
 								   value="<?php echo esc_attr( $service_body ); ?>"
 								   class="regular-text" placeholder="42" />
-							<p class="description"><?php esc_html_e( 'Optional. The BMLT service body this site represents (informational).', 'minutes' ); ?></p>
+							<p class="description"><?php esc_html_e( 'Optional. The BMLT service body this site represents (informational).', 'bmlt-minutes' ); ?></p>
 						</td>
 					</tr>
 					<tr>
-						<th scope="row"><label for="bmlt_minutes_sort_order"><?php esc_html_e( 'Default Sort Order', 'minutes' ); ?></label></th>
+						<th scope="row"><label for="bmlt_minutes_sort_order"><?php esc_html_e( 'Default Sort Order', 'bmlt-minutes' ); ?></label></th>
 						<td>
 							<select id="bmlt_minutes_sort_order" name="bmlt_minutes_sort_order">
-								<option value="desc" <?php selected( $sort_order, 'desc' ); ?>><?php esc_html_e( 'Newest first', 'minutes' ); ?></option>
-								<option value="asc" <?php selected( $sort_order, 'asc' ); ?>><?php esc_html_e( 'Oldest first', 'minutes' ); ?></option>
+								<option value="desc" <?php selected( $sort_order, 'desc' ); ?>><?php esc_html_e( 'Newest first', 'bmlt-minutes' ); ?></option>
+								<option value="asc" <?php selected( $sort_order, 'asc' ); ?>><?php esc_html_e( 'Oldest first', 'bmlt-minutes' ); ?></option>
 							</select>
-							<p class="description"><?php esc_html_e( 'Used by the [minutes] shortcode when no order attribute is provided.', 'minutes' ); ?></p>
+							<p class="description"><?php esc_html_e( 'Used by the [minutes] shortcode when no order attribute is provided.', 'bmlt-minutes' ); ?></p>
 						</td>
 					</tr>
 					<tr>
-						<th scope="row"><label for="<?php echo esc_attr( self::OPTION_MAX_UPLOAD_MB ); ?>"><?php esc_html_e( 'Maximum Upload Size (MB)', 'minutes' ); ?></label></th>
+						<th scope="row"><label for="<?php echo esc_attr( self::OPTION_MAX_UPLOAD_MB ); ?>"><?php esc_html_e( 'Maximum Upload Size (MB)', 'bmlt-minutes' ); ?></label></th>
 						<td>
 							<input type="number" min="1" step="1"
 								   id="<?php echo esc_attr( self::OPTION_MAX_UPLOAD_MB ); ?>"
 								   name="<?php echo esc_attr( self::OPTION_MAX_UPLOAD_MB ); ?>"
 								   value="<?php echo esc_attr( (string) $max_upload_mb ); ?>"
 								   class="small-text" />
-							<?php esc_html_e( 'MB', 'minutes' ); ?>
+							<?php esc_html_e( 'MB', 'bmlt-minutes' ); ?>
 							<p class="description">
-								<?php esc_html_e( 'Per-file cap applied to uploads on the Minutes editor. Does not affect uploads elsewhere.', 'minutes' ); ?>
+								<?php esc_html_e( 'Per-file cap applied to uploads on the Minutes editor. Does not affect uploads elsewhere.', 'bmlt-minutes' ); ?>
 								<?php if ( $server_cap_mb > 0 ) : ?>
 									<?php
 									printf(
 										/* translators: %d: server upload limit in MB */
-										esc_html__( 'Your server allows up to %d MB; the cap will be clamped to that if set higher.', 'minutes' ),
+										esc_html__( 'Your server allows up to %d MB; the cap will be clamped to that if set higher.', 'bmlt-minutes' ),
 										(int) $server_cap_mb
 									);
 									?>
@@ -928,22 +928,22 @@ class BMLT_Minutes {
 				<?php submit_button(); ?>
 			</form>
 
-			<h2><?php esc_html_e( 'Shortcode Usage', 'minutes' ); ?></h2>
-			<p><?php esc_html_e( 'Show all minutes, grouped by committee:', 'minutes' ); ?></p>
+			<h2><?php esc_html_e( 'Shortcode Usage', 'bmlt-minutes' ); ?></h2>
+			<p><?php esc_html_e( 'Show all minutes, grouped by committee:', 'bmlt-minutes' ); ?></p>
 			<code>[minutes]</code>
 
-			<p><?php esc_html_e( 'Only one committee, latest first, year heading:', 'minutes' ); ?></p>
+			<p><?php esc_html_e( 'Only one committee, latest first, year heading:', 'bmlt-minutes' ); ?></p>
 			<code>[minutes committee="area-service-committee" group_by="year"]</code>
 
-			<p><?php esc_html_e( 'Limit + show excerpt:', 'minutes' ); ?></p>
+			<p><?php esc_html_e( 'Limit + show excerpt:', 'bmlt-minutes' ); ?></p>
 			<code>[minutes limit="10" group_by="none" show_excerpt="true"]</code>
 
-			<h3><?php esc_html_e( 'Attributes', 'minutes' ); ?></h3>
+			<h3><?php esc_html_e( 'Attributes', 'bmlt-minutes' ); ?></h3>
 			<ul style="list-style:disc;padding-left:20px;">
-				<li><code>committee</code> — <?php esc_html_e( 'Slug or comma-separated slugs of Committee taxonomy terms to filter.', 'minutes' ); ?></li>
-				<li><code>year</code> — <?php esc_html_e( 'Filter to a single year (uses Meeting Date).', 'minutes' ); ?></li>
-				<li><code>limit</code> — <?php esc_html_e( 'Max items (-1 = no limit).', 'minutes' ); ?></li>
-				<li><code>order</code> — <code>desc</code> <?php esc_html_e( '(newest first)', 'minutes' ); ?> | <code>asc</code></li>
+				<li><code>committee</code> — <?php esc_html_e( 'Slug or comma-separated slugs of Committee taxonomy terms to filter.', 'bmlt-minutes' ); ?></li>
+				<li><code>year</code> — <?php esc_html_e( 'Filter to a single year (uses Meeting Date).', 'bmlt-minutes' ); ?></li>
+				<li><code>limit</code> — <?php esc_html_e( 'Max items (-1 = no limit).', 'bmlt-minutes' ); ?></li>
+				<li><code>order</code> — <code>desc</code> <?php esc_html_e( '(newest first)', 'bmlt-minutes' ); ?> | <code>asc</code></li>
 				<li><code>group_by</code> — <code>committee</code> | <code>year</code> | <code>none</code></li>
 				<li><code>show_excerpt</code> — <code>true</code> | <code>false</code></li>
 			</ul>

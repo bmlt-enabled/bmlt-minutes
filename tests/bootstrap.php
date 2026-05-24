@@ -1,6 +1,6 @@
 <?php
 /**
- * PHPUnit bootstrap file for the Minutes plugin tests.
+ * PHPUnit bootstrap file for BMLT Minutes plugin tests.
  *
  * Uses wp-phpunit/wp-phpunit (installed via Composer) as the test library.
  * WordPress core must be downloaded to WP_CORE_DIR (default: /tmp/wordpress).

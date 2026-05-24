@@ -4,7 +4,7 @@ Guidance for AI coding agents (Claude Code, Cursor, Aider, etc.) working in this
 
 ## Project Overview
 
-**Minutes** is a WordPress plugin for service bodies and committees to publish meeting minutes — PDFs, DOCX, XLSX files, or external links (Google Docs, Dropbox, OneDrive). Originally built for the bmlt-enabled (NA Service Bodies) community, but useful for any organization that needs a tidy minutes archive. The plugin is intentionally small: one main PHP file, one CSS, one JS, no build step.
+**BMLT Minutes** is a WordPress plugin for service bodies and committees to publish meeting minutes — PDFs, DOCX, XLSX files, or external links (Google Docs, Dropbox, OneDrive). Originally built for the bmlt-enabled (NA Service Bodies) community, but useful for any organization that needs a tidy minutes archive. The plugin is intentionally small: one main PHP file, one CSS, one JS, no build step.
 
 Sibling plugins to mirror in style and tone: `../crumb/`, `../fetch-meditation-wp/`.
 
@@ -174,7 +174,7 @@ Release notes are auto-extracted from the matching `= X.Y.Z =` block in `readme.
 ## Testing manually
 
 1. `make dev`
-2. wp-admin → Plugins → activate Minutes
+2. wp-admin → Plugins → activate BMLT Minutes
 3. Minutes → Add New → set title, meeting date, upload a PDF or paste a Google Doc URL, assign a committee, optionally set a password
 4. Create a page with `[minutes]` and view it — verify protected entries show a padlock, route to the singular permalink, and only reveal the doc after the password is entered
 5. Verify Settings → Maximum Upload Size enforces correctly by attempting to upload a file over the cap
