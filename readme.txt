@@ -87,7 +87,12 @@ Yes — use WordPress's built-in page password. Edit the page that holds your `[
 
 = How do I let someone manage minutes without giving them full site access? =
 
-Activating the plugin creates a **Minutes Manager** role. Assign a user that role (Users → edit user → Role), and they can add, edit, and publish minutes and upload documents — but nothing else in wp-admin. Administrators and Editors keep full access automatically. Under the hood the Meeting Minutes post type uses its own capabilities (`edit_bmlt_minutes`, `publish_bmlt_minutes`, etc.), so if you use a role-editor plugin you can mix these capabilities into any existing role instead. Curating the committee list stays admin-only; Minutes Managers can assign existing committees but not create new ones.
+There are two ways:
+
+1. **Minutes Manager role** — activating the plugin creates this role. Assign a user that role (Users → edit user → Role) and they can add, edit, and publish minutes and upload documents, but nothing else in wp-admin.
+2. **"Can manage minutes" checkbox** — on any user's profile (Users → edit user) there's a Meeting Minutes section with a "Can manage minutes" checkbox. Tick it to grant an existing user (e.g. an Author) minutes access *on top of* their current role, without changing that role. Untick to revoke. If the user's role already grants minutes access, the checkbox shows as locked with a note.
+
+Administrators and Editors keep full access automatically. Under the hood the Meeting Minutes post type uses its own capabilities (`edit_bmlt_minutes`, `publish_bmlt_minutes`, etc.), so a role-editor plugin can also mix these into any existing role. Curating the committee list stays admin-only; Minutes Managers can assign existing committees but not create new ones.
 
 = Will uninstalling delete my minutes? =
 
