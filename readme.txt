@@ -23,6 +23,7 @@ Features:
 * Supports PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, ODT, ODS, ODP, TXT, RTF, CSV, plus arbitrary URLs (Google Docs, Dropbox, OneDrive)
 * Single `[minutes]` shortcode with grouping, filtering, and limiting
 * Optional **password protection** per post — for minutes that still contain unredacted personal details
+* Dedicated **Minutes Manager** role — grant trusted servants access to manage minutes only, without broader site access
 * Configurable per-file upload size limit (default 10 MB, scoped to the Minutes editor only)
 * Block-editor compatible (custom fields exposed via the REST API)
 * Works as a standalone plugin — no BMLT server required
@@ -83,6 +84,10 @@ Yes. Some service bodies redact PII before posting, others share unredacted minu
 = Can I password-protect the entire page that contains [minutes]? =
 
 Yes — use WordPress's built-in page password. Edit the page that holds your `[minutes]` shortcode, open the Publish (Block Editor: Status & visibility) panel, set **Visibility → Password protected**, and enter a password. Visitors will see WordPress's standard password form before the whole page (including the minutes list) is rendered. This is independent of the per-post password on individual minutes — you can combine them if you want a members-only landing page plus an extra lock on specific minutes.
+
+= How do I let someone manage minutes without giving them full site access? =
+
+Activating the plugin creates a **Minutes Manager** role. Assign a user that role (Users → edit user → Role), and they can add, edit, and publish minutes and upload documents — but nothing else in wp-admin. Administrators and Editors keep full access automatically. Under the hood the Meeting Minutes post type uses its own capabilities (`edit_bmlt_minutes`, `publish_bmlt_minutes`, etc.), so if you use a role-editor plugin you can mix these capabilities into any existing role instead. Curating the committee list stays admin-only; Minutes Managers can assign existing committees but not create new ones.
 
 = Will uninstalling delete my minutes? =
 
