@@ -64,6 +64,21 @@ All plugin logic is in `minutes.php` in a single `BMLT_Minutes` class (singleton
 
   **Precedence**: when both `_bmlt_minutes_attachment_id` and `_bmlt_minutes_url` are set, the uploaded attachment wins. This is intentional — see `resolve_document()`.
 
+### Capabilities & roles
+
+The CPT uses its **own** capability set (`capability_type => ['bmlt_minute','bmlt_minutes']`, `map_meta_cap => true`) rather than the generic `post` caps. This lets minutes access be granted independently of general post editing. The primitive caps (`edit_bmlt_minutes`, `publish_bmlt_minutes`, `delete_others_bmlt_minutes`, …) are listed in `minutes_capabilities()` — that method is the single source of truth, and `uninstall.php` keeps a hardcoded copy in sync (it can't load the class).
+
+`add_capabilities()` runs on activation and:
+- mirrors all minutes caps onto `administrator` + `editor` (so existing privileged users keep working);
+- creates a `minutes_manager` role (constant `ROLE_MANAGER`) with the minutes caps plus `read` + `upload_files` — enough to reach wp-admin and use the Media Library, nothing more. It's removed-then-readded so it stays idempotent across re-activations.
+
+Gotchas for future changes:
+- `PRIMARY_CAP` (`edit_bmlt_minutes`) is the "can touch minutes" gate. The `register_post_meta` `auth_callback`s check it (not the generic `edit_posts`), otherwise Minutes Managers couldn't save meta via REST/Gutenberg.
+- The committee taxonomy sets `assign_terms => PRIMARY_CAP` but leaves `manage/edit/delete_terms => manage_categories`, so managers can categorize posts but not curate the committee list.
+- `save_meta()` uses `current_user_can('edit_post', $post_id)`, which `map_meta_cap` correctly resolves to the CPT caps — no change needed there.
+- The Settings page stays `manage_options` (admin-only); managers don't get to change the upload cap or server URL.
+- If you add a new cap, update `minutes_capabilities()` **and** the hardcoded array in `uninstall.php`.
+
 ### Password protection
 
 The plugin uses WordPress's native `wp_posts.post_password` column — no custom meta. Some NA service bodies redact PII before posting minutes, others share unredacted minutes with members only, so locking is per-post and **public-by-default** (empty password = unrestricted).

@@ -358,4 +358,55 @@ class Test_BMLT_Minutes extends WP_UnitTestCase {
 		$result = BMLT_Minutes::apply_password_field( $data, $postarr );
 		$this->assertSame( 'topsecret', $result['post_password'] );
 	}
+
+	// -------------------------------------------------------------------------
+	// Capabilities & roles
+	// -------------------------------------------------------------------------
+
+	public function test_administrator_gets_minutes_capabilities(): void {
+		$admin = get_role( 'administrator' );
+		foreach ( BMLT_Minutes::minutes_capabilities() as $cap ) {
+			$this->assertTrue( $admin->has_cap( $cap ), "administrator should have {$cap}" );
+		}
+	}
+
+	public function test_minutes_manager_role_exists_with_scoped_caps(): void {
+		$role = get_role( BMLT_Minutes::ROLE_MANAGER );
+		$this->assertNotNull( $role, 'Minutes Manager role should be created on activation.' );
+
+		// Has the minutes caps + the basics needed to reach wp-admin / upload.
+		$this->assertTrue( $role->has_cap( BMLT_Minutes::PRIMARY_CAP ) );
+		$this->assertTrue( $role->has_cap( 'publish_bmlt_minutes' ) );
+		$this->assertTrue( $role->has_cap( 'upload_files' ) );
+		$this->assertTrue( $role->has_cap( 'read' ) );
+
+		// But NOT generic content access.
+		$this->assertFalse( $role->has_cap( 'edit_posts' ) );
+		$this->assertFalse( $role->has_cap( 'edit_pages' ) );
+		$this->assertFalse( $role->has_cap( 'manage_options' ) );
+	}
+
+	public function test_minutes_manager_can_edit_minutes_but_not_posts(): void {
+		$user_id = self::factory()->user->create( [ 'role' => BMLT_Minutes::ROLE_MANAGER ] );
+		$user    = get_user_by( 'id', $user_id );
+
+		$this->assertTrue( user_can( $user, 'edit_bmlt_minutes' ) );
+		$this->assertTrue( user_can( $user, 'publish_bmlt_minutes' ) );
+		$this->assertFalse( user_can( $user, 'edit_posts' ), 'Minutes Manager must not gain generic post editing.' );
+	}
+
+	public function test_map_meta_cap_resolves_edit_post_for_manager(): void {
+		$author_id  = self::factory()->user->create( [ 'role' => BMLT_Minutes::ROLE_MANAGER ] );
+		$manager_id = self::factory()->user->create( [ 'role' => BMLT_Minutes::ROLE_MANAGER ] );
+
+		$post_id = self::factory()->post->create(
+			[
+				'post_type'   => BMLT_Minutes::CPT,
+				'post_author' => $author_id,
+			]
+		);
+
+		// A manager can edit minutes posts (incl. others', via edit_others_bmlt_minutes).
+		$this->assertTrue( user_can( $manager_id, 'edit_post', $post_id ) );
+	}
 }
