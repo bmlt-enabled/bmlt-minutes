@@ -1,30 +1,31 @@
-=== BMLT Minutes ===
+=== Minutes ===
 
 Contributors: bmltenabled, pjaudiomv
-Tags: narcotics anonymous, na, meeting minutes, bmlt, service committee
+Tags: meeting minutes, pdf, documents, agenda, bmlt
 Requires at least: 6.0
 Tested up to: 7.0
-Requires PHP: 8.1
+Requires PHP: 8.0
 Stable tag: 1.0.0
 License: GPLv2 or later
-License URI: http://www.gnu.org/licenses/gpl-2.0.html
+License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Publish NA service committee meeting minutes (PDF, DOCX, XLSX, Google Doc links) with a simple shortcode.
+Publish service committee meeting minutes (PDF, DOCX, XLSX, Google Doc links) with a simple shortcode.
 
 == Description ==
 
-BMLT Minutes is a lightweight WordPress plugin for NA (Narcotics Anonymous) Service Bodies — Areas, Regions, and Zonal Forums — to publish committee meeting minutes on their website. Most service committees produce PDFs, Word docs, spreadsheets, or Google Doc links every month, and need a clean way to organize them by committee and date.
+Minutes is a lightweight WordPress plugin for service bodies and committees to publish meeting minutes on their website. Most committees produce PDFs, Word docs, spreadsheets, or Google Doc links every month, and need a clean way to organize them by committee and date. Built for the bmlt-enabled community but useful for any organization that needs a tidy minutes archive.
 
 Features:
 
-* Dedicated **Meeting Minutes** post type with a uploaded-file or external-URL document field
-* **Committee** taxonomy seeded with common NA committees (ASC, RSC, H&I, PR, Activities, Outreach, Literature, Policy)
+* Dedicated **Meeting Minutes** post type with an uploaded-file or external-URL document field
+* **Committee** taxonomy seeded with common service-committee defaults (Area, Regional, Hospitals & Institutions, Public Relations, Activities, Outreach, Literature, Policy) — fully editable
 * Meeting-date field separate from publish-date, with sorting and year-grouping
 * Supports PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, ODT, ODS, ODP, TXT, RTF, CSV, plus arbitrary URLs (Google Docs, Dropbox, OneDrive)
 * Single `[minutes]` shortcode with grouping, filtering, and limiting
 * Optional **password protection** per post — for minutes that still contain unredacted personal details
+* Configurable per-file upload size limit (default 10 MB, scoped to the Minutes editor only)
 * Block-editor compatible (custom fields exposed via the REST API)
-* Works on any BMLT-enabled or non-BMLT NA site
+* Works as a standalone plugin — no BMLT server required
 
 = Usage =
 
@@ -89,11 +90,15 @@ Yes. The `uninstall.php` script removes the plugin's settings and deletes all mi
 
 == Screenshots ==
 
-1. Frontend list of minutes grouped by committee.
-2. Editor screen with the Minutes Document meta box (file picker or external URL).
-3. Settings screen.
+1. Frontend `[minutes]` shortcode output, grouped by committee. The padlock and "Protected" badge indicate a password-protected entry.
+2. Admin **Meeting Minutes** list view, with columns for Meeting Date, File / Link, Author, and Committees.
 
 == Changelog ==
 
 = 1.0.0 =
 * Initial release.
+
+== Upgrade Notice ==
+
+= 1.0.0 =
+Initial release.

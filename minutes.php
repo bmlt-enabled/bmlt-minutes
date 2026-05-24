@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name: BMLT Minutes
+ * Plugin Name: Minutes
  * Plugin URI: https://wordpress.org/plugins/minutes/
  * Description: Publish NA service committee meeting minutes (PDF, DOCX, XLSX, Google Doc links) with a simple shortcode.
  * Version: 1.0.0
@@ -831,7 +831,7 @@ class BMLT_Minutes {
 	public static function admin_menu(): void {
 		add_submenu_page(
 			'edit.php?post_type=' . self::CPT,
-			__( 'BMLT Minutes Settings', 'minutes' ),
+			__( 'Minutes Settings', 'minutes' ),
 			__( 'Settings', 'minutes' ),
 			'manage_options',
 			'bmlt-minutes-settings',
@@ -864,7 +864,7 @@ class BMLT_Minutes {
 		$server_cap_mb  = (int) floor( wp_max_upload_size() / ( 1024 * 1024 ) );
 		?>
 		<div class="wrap">
-			<h1><?php esc_html_e( 'BMLT Minutes Settings', 'minutes' ); ?></h1>
+			<h1><?php esc_html_e( 'Minutes Settings', 'minutes' ); ?></h1>
 
 			<?php settings_errors(); ?>
 

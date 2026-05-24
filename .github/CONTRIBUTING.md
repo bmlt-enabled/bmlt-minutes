@@ -1,6 +1,6 @@
-# Contributing to BMLT Minutes
+# Contributing to Minutes
 
-Thanks for helping out. BMLT Minutes is a small WordPress plugin built by the [bmlt-enabled](https://bmlt.app) community to help NA service bodies publish committee meeting minutes.
+Thanks for helping out. Minutes is a small WordPress plugin built by the [bmlt-enabled](https://bmlt.app) community to help service bodies and committees publish meeting minutes.
 
 ## How to Contribute
 
@@ -20,7 +20,7 @@ The Docker setup spins up WordPress + MariaDB with the plugin mounted live:
 make dev
 ```
 
-Open <http://localhost:8080>, finish the WP install, log in, and activate **BMLT Minutes** on the Plugins screen. Edits to `minutes.php` (or the CSS / JS) take effect on reload.
+Open <http://localhost:8080>, finish the WP install, log in, and activate **Minutes** on the Plugins screen. Edits to `minutes.php` (or the CSS / JS) take effect on reload.
 
 To shell into the WordPress container:
 

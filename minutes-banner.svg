@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 772 250" width="772" height="250">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%"  stop-color="#f0f1f3"/>
+      <stop offset="100%" stop-color="#dbe3ec"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="772" height="250" fill="url(#bg)"/>
+
+  <!-- Subtle accent stripe on the left edge -->
+  <rect x="0" y="0" width="6" height="250" fill="#0A61AD"/>
+
+  <!-- Icon block: same design as the standalone icon -->
+  <g transform="translate(48, 50)">
+    <rect x="0" y="0" width="150" height="150" rx="24" ry="24"
+          fill="#ffffff" stroke="#0A61AD" stroke-width="6"/>
+    <rect x="40" y="28" width="70" height="94" rx="4" ry="4"
+          fill="#f0f1f3" stroke="#6b7280" stroke-width="2"/>
+    <path d="M96 28 L110 42 L96 42 Z" fill="#d1d5db" stroke="#6b7280" stroke-width="2" stroke-linejoin="round"/>
+    <rect x="48" y="50" width="48" height="6" rx="2" fill="#0A61AD"/>
+    <rect x="48" y="66" width="54" height="3" rx="1.5" fill="#9ca3af"/>
+    <rect x="48" y="76" width="54" height="3" rx="1.5" fill="#9ca3af"/>
+    <rect x="48" y="86" width="42" height="3" rx="1.5" fill="#9ca3af"/>
+    <rect x="48" y="96" width="54" height="3" rx="1.5" fill="#9ca3af"/>
+    <rect x="48" y="106" width="36" height="3" rx="1.5" fill="#9ca3af"/>
+  </g>
+
+  <!-- Wordmark -->
+  <text x="232" y="135"
+        font-family="Helvetica, Arial, sans-serif"
+        font-size="78"
+        font-weight="700"
+        fill="#0A61AD"
+        letter-spacing="-1">Minutes</text>
+
+  <!-- Subtitle -->
+  <text x="234" y="170"
+        font-family="Helvetica, Arial, sans-serif"
+        font-size="22"
+        font-weight="400"
+        fill="#374151">Publish committee meeting minutes on WordPress</text>
+
+  <!-- Community tag -->
+  <text x="234" y="198"
+        font-family="Helvetica, Arial, sans-serif"
+        font-size="15"
+        font-weight="400"
+        fill="#6b7280">by the bmlt-enabled community</text>
+</svg>

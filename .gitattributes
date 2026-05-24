@@ -17,3 +17,5 @@ README.md export-ignore
 /bin export-ignore
 /tests export-ignore
 assets/ export-ignore
+minutes-logo.svg export-ignore
+minutes-banner.svg export-ignore

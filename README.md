@@ -1,49 +1,70 @@
-# BMLT Minutes
+<p align="center">
+  <img src="minutes-logo.svg" alt="Minutes logo" width="128" height="128">
+</p>
 
-A simple WordPress plugin for NA (Narcotics Anonymous) Service Bodies to publish committee meeting minutes — PDFs, DOCX, XLSX, or Google Doc / Dropbox / OneDrive links — on their website.
+# Minutes for WordPress
 
-Built by the [bmlt-enabled](https://bmlt.app) community.
+[![WordPress Plugin](https://img.shields.io/wordpress/plugin/v/minutes)](https://wordpress.org/plugins/minutes/)
+[![WordPress Tested](https://img.shields.io/wordpress/plugin/tested/minutes)](https://wordpress.org/plugins/minutes/)
+[![PHP Version](https://img.shields.io/wordpress/plugin/required-php/minutes)](https://wordpress.org/plugins/minutes/)
 
-## Why
-
-~90% of NA service bodies run their site on WordPress, and every one of them needs to post Area / Region / Zonal Forum minutes each month. This plugin gives them a no-fuss way to do it: a dedicated Minutes post type, a Committee taxonomy, a meeting-date field, and a single shortcode to render the list.
-
-Some service bodies redact PII from minutes and some don't, so each post supports an optional password — public by default, locked when a password is set.
-
-## Install
-
-Drop the plugin into `wp-content/plugins/minutes/` and activate.
-
-For local development with Docker:
-
-```bash
-make dev
-```
-
-opens WordPress at <http://localhost:8080> with the plugin auto-mounted.
+[WordPress plugin](https://wordpress.org/plugins/minutes/) for service bodies and committees to publish meeting minutes — PDFs, DOCX, XLSX, or links to Google Docs / Dropbox / OneDrive — via a single shortcode. Built by the [bmlt-enabled](https://bmlt.app) community.
 
 ## Usage
 
-```text
+```
 [minutes]
+```
+
+Filter, limit, or change the grouping per-page:
+
+```
 [minutes committee="hospitals-institutions" group_by="year"]
 [minutes limit="10" group_by="none" show_excerpt="true"]
 ```
 
-See `readme.txt` for the full attribute list.
+## Installation
 
-## Develop
+1. Upload to `/wp-content/plugins/minutes/`
+2. Activate in WordPress admin
+3. Add minutes under **Minutes → Add New** — upload a file or paste a Google Doc URL, choose a committee, set the meeting date
+4. Add `[minutes]` to any page or post
 
-```bash
-make composer  # install dev deps (phpcs, wpcs, phpunit, wp-phpunit, polyfills)
-make lint      # phpcs
-make fmt       # phpcbf
-make test      # phpunit in Docker (no local DB needed)
-make build     # zip for distribution
-```
+## Settings
 
-CI runs lint + PHPUnit on every PR (PHP 8.3 and 8.4). Tagged releases (e.g. `git tag 1.2.0 && git push --tags`) build a zip, attach it to a GitHub Release, and push to WordPress.org SVN. See `AGENTS.md` for the full workflow rundown.
+Configured under **Minutes → Settings**.
 
-## License
+| Setting              | Description                                                                  |
+|----------------------|------------------------------------------------------------------------------|
+| BMLT Server URL      | Optional. Informational link back to the service body's BMLT root server.    |
+| Service Body ID      | Optional. BMLT service body this site represents.                            |
+| Default Sort Order   | `desc` (newest first) or `asc`. Applies when `[minutes]` has no `order` attr. |
+| Maximum Upload Size  | Per-file cap (MB) applied to uploads on the Minutes editor. Default 10 MB. Clamped to the server limit on save. |
 
-GPLv2 or later — see [LICENSE](LICENSE).
+## Shortcode Attributes
+
+| Attribute      | Default     | Description                                                  |
+|----------------|-------------|--------------------------------------------------------------|
+| `committee`    | _all_       | Slug or comma-separated slugs of Committee terms to filter.  |
+| `year`         | _all_       | Restrict to a single year by Meeting Date (e.g. `2026`).     |
+| `limit`        | `-1`        | Max items to render. `-1` = no limit.                        |
+| `order`        | `desc`      | `desc` (newest first) or `asc`.                              |
+| `group_by`     | `committee` | `committee`, `year`, or `none`.                              |
+| `show_excerpt` | `false`     | `true` to show each post's excerpt under the link.           |
+
+## Password Protection
+
+Some service bodies redact personal details from minutes before posting, others share unredacted minutes with members only. Each minutes post can be optionally locked:
+
+- **Per-post**: set a value in the **Password Protection** field of the Minutes Document meta box (or use WordPress's native Publish → Visibility → Password protected). Locked entries show a padlock in the `[minutes]` list and require the password before the document URL is revealed.
+- **Whole-page**: set a password on the page that contains `[minutes]` via the same Visibility control — WordPress's standard password form gates the entire page.
+
+Default behavior with no password is fully public access.
+
+## Supported File Types
+
+PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, ODT, ODS, ODP, TXT, RTF, CSV — plus arbitrary URLs (Google Docs, Dropbox, OneDrive, anywhere else).
+
+## Contributing
+
+See [CONTRIBUTING.md](.github/CONTRIBUTING.md) for development setup, code standards, and the release flow. Security issues go through [SECURITY.md](.github/SECURITY.md).
