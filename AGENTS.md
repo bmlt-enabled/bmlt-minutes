@@ -72,6 +72,8 @@ The CPT uses its **own** capability set (`capability_type => ['bmlt_minute','bml
 - mirrors all minutes caps onto `administrator` + `editor` (so existing privileged users keep working);
 - creates a `minutes_manager` role (constant `ROLE_MANAGER`) with the minutes caps plus `read` + `upload_files` — enough to reach wp-admin and use the Media Library, nothing more. It's removed-then-readded so it stays idempotent across re-activations.
 
+`render_user_capability_field()` / `save_user_capability_field()` add a "Can manage minutes" checkbox to the user-edit screen (`show_user_profile` / `edit_user_profile`), gated on `current_user_can('promote_users')`. Ticking it grants the minutes caps + `upload_files` at the **user** level (via `WP_User::add_cap`), so an existing Author/Editor/Subscriber gets minutes access without changing their role. If the user's role already grants `PRIMARY_CAP` (`user_role_grants_minutes()`), the checkbox renders disabled and the save path no-ops — manage it via the role instead.
+
 Gotchas for future changes:
 - `PRIMARY_CAP` (`edit_bmlt_minutes`) is the "can touch minutes" gate. The `register_post_meta` `auth_callback`s check it (not the generic `edit_posts`), otherwise Minutes Managers couldn't save meta via REST/Gutenberg.
 - The committee taxonomy sets `assign_terms => PRIMARY_CAP` but leaves `manage/edit/delete_terms => manage_categories`, so managers can categorize posts but not curate the committee list.

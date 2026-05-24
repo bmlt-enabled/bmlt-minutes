@@ -409,4 +409,70 @@ class Test_BMLT_Minutes extends WP_UnitTestCase {
 		// A manager can edit minutes posts (incl. others', via edit_others_bmlt_minutes).
 		$this->assertTrue( user_can( $manager_id, 'edit_post', $post_id ) );
 	}
+
+	// -------------------------------------------------------------------------
+	// Per-user "Can manage minutes" toggle
+	// -------------------------------------------------------------------------
+
+	public function test_user_cap_toggle_grants_caps_when_checked(): void {
+		$admin_id  = self::factory()->user->create( [ 'role' => 'administrator' ] );
+		$target_id = self::factory()->user->create( [ 'role' => 'subscriber' ] );
+		wp_set_current_user( $admin_id );
+
+		$_POST = [
+			BMLT_Minutes::USER_CAP_NONCE_FIELD => wp_create_nonce( BMLT_Minutes::USER_CAP_NONCE_ACTION ),
+			'bmlt_minutes_can_manage'          => '1',
+		];
+
+		BMLT_Minutes::save_user_capability_field( $target_id );
+
+		$target = get_user_by( 'id', $target_id );
+		$this->assertTrue( user_can( $target, BMLT_Minutes::PRIMARY_CAP ) );
+		$this->assertTrue( user_can( $target, 'publish_bmlt_minutes' ) );
+		$this->assertTrue( user_can( $target, 'upload_files' ) );
+		$this->assertFalse( user_can( $target, 'edit_posts' ) );
+
+		$_POST = [];
+	}
+
+	public function test_user_cap_toggle_revokes_caps_when_unchecked(): void {
+		$admin_id  = self::factory()->user->create( [ 'role' => 'administrator' ] );
+		$target_id = self::factory()->user->create( [ 'role' => 'subscriber' ] );
+		wp_set_current_user( $admin_id );
+
+		$target = get_user_by( 'id', $target_id );
+		foreach ( BMLT_Minutes::minutes_capabilities() as $cap ) {
+			$target->add_cap( $cap );
+		}
+		$this->assertTrue( user_can( $target_id, BMLT_Minutes::PRIMARY_CAP ) );
+
+		// No checkbox key in POST = unchecked.
+		$_POST = [
+			BMLT_Minutes::USER_CAP_NONCE_FIELD => wp_create_nonce( BMLT_Minutes::USER_CAP_NONCE_ACTION ),
+		];
+
+		BMLT_Minutes::save_user_capability_field( $target_id );
+
+		$target = get_user_by( 'id', $target_id );
+		$this->assertFalse( user_can( $target, BMLT_Minutes::PRIMARY_CAP ) );
+
+		$_POST = [];
+	}
+
+	public function test_user_cap_toggle_requires_promote_users(): void {
+		$editor_id = self::factory()->user->create( [ 'role' => 'author' ] ); // no promote_users
+		$target_id = self::factory()->user->create( [ 'role' => 'subscriber' ] );
+		wp_set_current_user( $editor_id );
+
+		$_POST = [
+			BMLT_Minutes::USER_CAP_NONCE_FIELD => wp_create_nonce( BMLT_Minutes::USER_CAP_NONCE_ACTION ),
+			'bmlt_minutes_can_manage'          => '1',
+		];
+
+		BMLT_Minutes::save_user_capability_field( $target_id );
+
+		$this->assertFalse( user_can( $target_id, BMLT_Minutes::PRIMARY_CAP ), 'A non-privileged user must not be able to grant minutes caps.' );
+
+		$_POST = [];
+	}
 }
