@@ -3,7 +3,7 @@
 Contributors: bmltenabled, pjaudiomv
 Tags: narcotics anonymous, na, meeting minutes, bmlt, service committee
 Requires at least: 6.0
-Tested up to: 6.8
+Tested up to: 7.0
 Requires PHP: 8.1
 Stable tag: 1.0.0
 License: GPLv2 or later
@@ -22,6 +22,7 @@ Features:
 * Meeting-date field separate from publish-date, with sorting and year-grouping
 * Supports PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, ODT, ODS, ODP, TXT, RTF, CSV, plus arbitrary URLs (Google Docs, Dropbox, OneDrive)
 * Single `[minutes]` shortcode with grouping, filtering, and limiting
+* Optional **password protection** per post — for minutes that still contain unredacted personal details
 * Block-editor compatible (custom fields exposed via the REST API)
 * Works on any BMLT-enabled or non-BMLT NA site
 
@@ -50,7 +51,7 @@ Shortcode attributes:
 
 == Installation ==
 
-1. Upload the plugin files to `/wp-content/plugins/bmlt-minutes/`, or install via the Plugins screen.
+1. Upload the plugin files to `/wp-content/plugins/minutes/`, or install via the Plugins screen.
 2. Activate the plugin through the Plugins screen in WordPress.
 3. (Optional) Open **Minutes → Settings** to set your BMLT server URL and default sort.
 4. Add minutes under **Minutes → Add New** — upload a file or paste a Google Doc / external link, choose a committee, set the meeting date, publish.
@@ -73,6 +74,14 @@ Yes. The Committee taxonomy is hierarchical (like Categories). Go to **Minutes �
 = How do I link to a Google Doc instead of uploading? =
 
 In the **Minutes Document** meta box on the editor screen, leave the file field empty and paste your Google Doc / Drive URL into the **External Link** field.
+
+= Can I password-protect minutes that contain personal details? =
+
+Yes. Some service bodies redact PII before posting, others share unredacted minutes with members only. On the editor screen, set a value in the **Password Protection** field of the Minutes Document meta box (or use WordPress's built-in Visibility → Password protected option in the Publish panel). On the public `[minutes]` list, protected entries show a padlock and link to a password-prompt page rather than exposing the document URL. Members enter the shared password once per browser to unlock the document. Default behavior with no password set is fully public access.
+
+= Can I password-protect the entire page that contains [minutes]? =
+
+Yes — use WordPress's built-in page password. Edit the page that holds your `[minutes]` shortcode, open the Publish (Block Editor: Status & visibility) panel, set **Visibility → Password protected**, and enter a password. Visitors will see WordPress's standard password form before the whole page (including the minutes list) is rendered. This is independent of the per-post password on individual minutes — you can combine them if you want a members-only landing page plus an extra lock on specific minutes.
 
 = Will uninstalling delete my minutes? =
 

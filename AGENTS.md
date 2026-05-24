@@ -11,32 +11,43 @@ Sibling plugins to mirror in style and tone: `../crumb/`, `../fetch-meditation-w
 ## Layout
 
 ```
-minutes.php          Main plugin file — singleton BMLT_Minutes class, all logic lives here
-uninstall.php        Removes options + deletes all bmlt_minutes posts when the plugin is deleted
-index.php            Empty silence file
-css/minutes.css      Frontend list styles (used by [minutes] shortcode)
-js/admin.js          wp.media file-picker wiring for the Minutes Document meta box
-assets/              WordPress.org banner + icon + screenshots (gitattribute: export-ignore)
-readme.txt           WordPress.org readme (Markdown-ish, dot-org-flavored)
-README.md            GitHub README
-composer.json        Dev deps only (phpcs + wpcs); plugin ships with zero runtime composer deps
-Makefile             dev / lint / fmt / build targets
-Dockerfile           wordpress:7.0-php8.3-apache base
-docker-compose.yml   Local WP + MariaDB stack (port 8080, mounts parent dir as plugins/)
-.phpcs.xml           WordPress-Core ruleset, short arrays allowed
+minutes.php                Main plugin file — singleton BMLT_Minutes class, all logic lives here
+uninstall.php              Removes options + deletes all bmlt_minutes posts when the plugin is deleted
+index.php                  Empty silence file
+css/minutes.css            Frontend list styles (used by [minutes] shortcode)
+js/admin.js                wp.media file-picker wiring for the Minutes Document meta box
+assets/                    WordPress.org banner + icon + screenshots (gitattribute: export-ignore)
+readme.txt                 WordPress.org readme (Markdown-ish, dot-org-flavored)
+README.md                  GitHub README
+composer.json              Dev deps only (phpcs + wpcs + phpunit + wp-phpunit + polyfills); zero runtime deps
+Makefile                   dev / lint / fmt / build / test / install-wp-tests targets
+Dockerfile                 wordpress:7.0-php8.3-apache base
+docker-compose.yml         Local WP + MariaDB stack (port 8080, mounts parent dir as plugins/)
+.phpcs.xml                 WordPress-Core ruleset, short arrays allowed; tests/ and bin/ excluded
+phpunit.xml                PHPUnit config (bootstrap=tests/bootstrap.php, polyfills wired)
+bin/install-wp-tests.sh    Downloads WordPress core + creates the test DB (called by CI + locally)
+tests/bootstrap.php        Loads wp-phpunit, manually loads minutes.php, runs activate() once
+tests/wp-tests-config.php  Test-suite wp-config (reads DB_* env vars, falls back to localhost)
+tests/test-minutes.php     Unit tests (registration, sanitizers, resolve_document, shortcode, password)
+.github/workflows/         pull-requests.yml, release.yml, latest.yml
+.github/scripts/           deploy-wordpress.sh — pushes a tagged release to plugins.svn.wordpress.org
 ```
 
 ## Commands
 
 ```bash
-make composer   # Install dev deps (phpcs, wpcs)
-make lint       # phpcs against WordPress-Core
-make fmt        # phpcbf auto-fix
-make dev        # Boot WP + MariaDB in Docker on http://localhost:8080
-make build      # git archive zip into build/
-make clean      # rm -rf build
-php -l minutes.php   # quick syntax sanity check
+make composer          # Install dev deps (phpcs, wpcs, phpunit, wp-phpunit, polyfills)
+make lint              # phpcs against WordPress-Core
+make fmt               # phpcbf auto-fix
+make dev               # Boot WP + MariaDB in Docker on http://localhost:8080
+make build             # git archive zip into build/
+make clean             # rm -rf build
+make test              # Run PHPUnit in Docker (self-contained — no local MySQL needed)
+make test-clean        # Tear down test containers + images + volumes
+php -l minutes.php     # quick syntax sanity check
 ```
+
+`make test` is self-contained: it builds `Dockerfile.test` (PHP 8.3 + composer), boots a tmpfs MariaDB sidecar, runs `bin/install-wp-tests.sh` inside the container to download WP core, then executes `vendor/bin/phpunit`. No host-side database or `/tmp/wordpress` is required. CI bypasses this and runs phpunit directly against a service container — see `.github/workflows/`.
 
 ## Architecture
 
@@ -52,6 +63,20 @@ All plugin logic is in `minutes.php` in a single `BMLT_Minutes` class (singleton
   - `_bmlt_minutes_attachment_id` — WP attachment ID
 
   **Precedence**: when both `_bmlt_minutes_attachment_id` and `_bmlt_minutes_url` are set, the uploaded attachment wins. This is intentional — see `resolve_document()`.
+
+### Password protection
+
+The plugin uses WordPress's native `wp_posts.post_password` column — no custom meta. Some NA service bodies redact PII before posting minutes, others share unredacted minutes with members only, so locking is per-post and **public-by-default** (empty password = unrestricted).
+
+Three integration points:
+
+1. **Meta box field** (`render_meta_box`) — adds a plain-text Password Protection input alongside the document fields. The native Publish → Visibility → Password protected control still works; both write to the same column.
+2. **Save path** (`apply_password_field`) — hooks `wp_insert_post_data` so the password lands in `post_password` during the same insert that creates/updates the row. **Don't** push this through `wp_update_post` from `save_post`; that recurses.
+3. **Display** — `render_item()` checks `post_password_required( $post )` and, when true, hides the document URL/type, swaps in `dashicons-lock`, and routes the link to the singular permalink (where WP renders its built-in password form). `append_document_link()` filters `the_content` on singular `bmlt_minutes` views to add a "View Document" button below the post body — but returns early when the post is still locked, so the button only appears after the password cookie is set.
+
+The shortcode list intentionally still **shows** locked entries (titled, dated, padlocked) so members know which meetings exist; only the document URL itself is gated.
+
+For protecting the **entire page** that hosts `[minutes]`, the plugin deliberately ships nothing — WordPress's native Visibility → Password protected on the containing page already does it, so there's no reason to reinvent it. If a future change reintroduces a shortcode-level gate, do it via a Settings-stored password (never a literal in the shortcode attribute, which leaks into page source and caches).
 
 ### Options
 
@@ -76,7 +101,9 @@ All three are scoped via `is_minutes_upload_context()` — uploads outside the M
 
 ### Shortcode
 
-`[minutes]` — only public-facing surface. Attributes: `committee`, `year`, `limit`, `order`, `group_by`, `show_excerpt`. Renders into `.bmlt-minutes` with dashicon-prefixed file links. Style hook: `.bmlt-minutes__*` BEM-ish classes.
+`[minutes]` — primary public-facing surface. Attributes: `committee`, `year`, `limit`, `order`, `group_by`, `show_excerpt`. Renders into `.bmlt-minutes` with dashicon-prefixed file links. Style hook: `.bmlt-minutes__*` BEM-ish classes. Locked entries get the `.bmlt-minutes__item--locked` modifier and a `.bmlt-minutes__type--locked` "Protected" badge.
+
+The singular `bmlt_minutes` permalink is also public — used as the unlock surface for password-protected items, and as a fallback link target when neither attachment nor URL is set.
 
 Type → dashicon mapping lives in `dashicon_for_type()`. To add a new file type:
 
@@ -112,12 +139,42 @@ make bash          # Shell into the wordpress container
 
 The compose file mounts the **parent directory** (`../`) as `wp-content/plugins`, so sibling bmlt-enabled plugins are also available. To activate the plugin during dev, log in to wp-admin and activate "BMLT Minutes" on the Plugins screen.
 
+## Automated tests
+
+PHPUnit runs against the WordPress test suite via the `wp-phpunit/wp-phpunit` composer package. The setup mirrors `../crumb/` exactly:
+
+- `tests/bootstrap.php` loads wp-phpunit, then manually `require`s `minutes.php` and calls `BMLT_Minutes::activate()` so the CPT/taxonomy/default committees exist for every test run.
+- `tests/wp-tests-config.php` is environment-driven — DB credentials come from `DB_HOST` / `DB_USER` / `DB_PASS` / `DB_NAME` (defaults: `localhost` / `root` / `root` / `wordpress_test`).
+- `tests/test-minutes.php` covers registration, sanitizers, `resolve_document()` precedence, the `[minutes]` shortcode (incl. locked-post URL hiding), the `the_content` single-view filter, and the `apply_password_field` nonce-gated post_password write.
+
+Local one-shot:
+
+```bash
+make test               # docker-compose: builds image, runs migrations + phpunit
+```
+
+If you want to run tests on the host (e.g. while debugging a specific failure), boot a MariaDB yourself, point env vars at it, run `bash bin/install-wp-tests.sh wordpress_test root root 127.0.0.1 latest` once, then `vendor/bin/phpunit`.
+
+If you add public behavior, add a test. Prefer testing through the public API (`render_shortcode`, `resolve_document`, etc.) rather than reflecting into private helpers. New private helpers usually don't need direct coverage — exercise them via a public entrypoint.
+
+## CI / Release
+
+Three workflows in `.github/workflows/` (mirrors `../crumb/`):
+
+| Workflow | Trigger | Jobs |
+|---|---|---|
+| `pull-requests.yml` | PR to `main` | `lint` (phpcs) + `test` (phpunit on 8.3 & 8.4) |
+| `latest.yml` | push to `main` | `lint` + `test` + `deploy` — builds with `PROD=1 make build` (no dev deps), uploads to S3 (`archives.bmlt.app/minutes/…`), then calls `bmlt-enabled/wordpress-releases-github-action@v2`. Needs `AWS_ACCOUNT_ID` + the OIDC role `gh-ci-s3-artifact`. |
+| `release.yml` | push of a tag (e.g. `1.1.0`) | `lint` + `test` + `package` — produces `minutes-<tag>.zip`, attaches it to a GitHub Release, then runs `.github/scripts/deploy-wordpress.sh` to push the build to the WordPress.org SVN (skipped for tags containing `beta`). Needs `WORDPRESS_USERNAME` + `WORDPRESS_PASSWORD` secrets. |
+
+`deploy-wordpress.sh` enforces that the tag matches `Version:` in `minutes.php` and `Stable tag:` in `readme.txt`. **When bumping the version, update both** — the deploy will refuse to ship otherwise.
+
+Release notes are auto-extracted from the matching `= X.Y.Z =` block in `readme.txt`'s changelog, so the changelog entry for the version is what the GitHub Release body shows.
+
 ## Testing manually
 
 1. `make dev`
 2. wp-admin → Plugins → activate BMLT Minutes
-3. Minutes → Add New → set title, meeting date, upload a PDF or paste a Google Doc URL, assign a committee
-4. Create a page with `[minutes]` and view it
+3. Minutes → Add New → set title, meeting date, upload a PDF or paste a Google Doc URL, assign a committee, optionally set a password
+4. Create a page with `[minutes]` and view it — verify protected entries show a padlock, route to the singular permalink, and only reveal the doc after the password is entered
 5. Verify Settings → Maximum Upload Size enforces correctly by attempting to upload a file over the cap
-
-There is no PHPUnit suite yet. If you add one, follow `../crumb/tests/` for the wp-phpunit bootstrap pattern.

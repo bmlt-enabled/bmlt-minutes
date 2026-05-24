@@ -64,6 +64,15 @@
 	text-transform: uppercase;
 }
 
+.bmlt-minutes__type--locked {
+	background: #fff4e5;
+	color: #8a5a00;
+}
+
+.bmlt-minutes__item--locked .bmlt-minutes__icon {
+	color: #8a5a00;
+}
+
 .bmlt-minutes__date {
 	font-size: 0.85em;
 	color: #777;
@@ -74,6 +83,32 @@
 	margin: 0.25em 0 0.5em 1.75em;
 	color: #555;
 	font-size: 0.9em;
+}
+
+.bmlt-minutes__single-date {
+	margin: 0 0 1em;
+}
+
+.bmlt-minutes__single-link {
+	margin: 1.5em 0;
+}
+
+.bmlt-minutes__button {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.5em;
+	padding: 0.6em 1.1em;
+	background: #2271b1;
+	color: #fff;
+	border-radius: 4px;
+	text-decoration: none;
+	font-weight: 600;
+}
+
+.bmlt-minutes__button:hover,
+.bmlt-minutes__button:focus {
+	background: #135e96;
+	color: #fff;
 }
 
 @media (max-width: 480px) {

@@ -3,7 +3,7 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 	exit;
 }
 
-$minutes_options = [
+$bmlt_minutes_options = [
 	'bmlt_minutes_server',
 	'bmlt_minutes_service_body',
 	'bmlt_minutes_default_committees',
@@ -12,11 +12,11 @@ $minutes_options = [
 	'bmlt_minutes_max_upload_mb',
 ];
 
-foreach ( $minutes_options as $opt ) {
-	delete_option( $opt );
+foreach ( $bmlt_minutes_options as $bmlt_minutes_option ) {
+	delete_option( $bmlt_minutes_option );
 }
 
-$posts = get_posts(
+$bmlt_minutes_posts = get_posts(
 	[
 		'post_type'   => 'bmlt_minutes',
 		'numberposts' => -1,
@@ -25,6 +25,6 @@ $posts = get_posts(
 	]
 );
 
-foreach ( $posts as $post_id ) {
-	wp_delete_post( $post_id, true );
+foreach ( $bmlt_minutes_posts as $bmlt_minutes_post_id ) {
+	wp_delete_post( $bmlt_minutes_post_id, true );
 }
