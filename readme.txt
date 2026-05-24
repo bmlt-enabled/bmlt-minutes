@@ -93,12 +93,12 @@ Yes. The `uninstall.php` script removes the plugin's settings and deletes all mi
 1. Frontend `[minutes]` shortcode output, grouped by committee. The padlock and "Protected" badge indicate a password-protected entry.
 2. Admin **Meeting Minutes** list view, with columns for Meeting Date, File / Link, Author, and Committees.
 
-== Changelog ==
-
-= 1.0.0 =
-* Initial release.
-
 == Upgrade Notice ==
 
 = 1.0.0 =
 Initial release.
+
+== Changelog ==
+
+= 1.0.0 =
+* Initial release.
