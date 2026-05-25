@@ -3,7 +3,7 @@
  * Plugin Name: BMLT Minutes
  * Plugin URI: https://wordpress.org/plugins/bmlt-minutes/
  * Description: Publish NA service committee meeting minutes (PDF, DOCX, XLSX, Google Doc links) with a simple shortcode.
- * Version: 1.0.1
+ * Version: 1.0.2
  * Author: bmltenabled
  * Author URI: https://bmlt.app
  * License: GPL v2 or later
@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'BMLT_MINUTES_VERSION', '1.0.1' );
+define( 'BMLT_MINUTES_VERSION', '1.0.2' );
 define( 'BMLT_MINUTES_FILE', __FILE__ );
 define( 'BMLT_MINUTES_URL', plugin_dir_url( __FILE__ ) );
 define( 'BMLT_MINUTES_PATH', plugin_dir_path( __FILE__ ) );
@@ -1020,8 +1020,6 @@ class BMLT_Minutes {
 	public static function register_settings(): void {
 		$group = 'bmlt-minutes-group';
 
-		register_setting( $group, 'bmlt_minutes_server', 'esc_url_raw' );
-		register_setting( $group, 'bmlt_minutes_service_body', 'sanitize_text_field' );
 		register_setting( $group, 'bmlt_minutes_sort_order', 'sanitize_text_field' );
 		register_setting(
 			$group,
@@ -1035,8 +1033,6 @@ class BMLT_Minutes {
 	}
 
 	public static function settings_page(): void {
-		$server         = (string) get_option( 'bmlt_minutes_server', '' );
-		$service_body   = (string) get_option( 'bmlt_minutes_service_body', '' );
 		$sort_order     = (string) get_option( 'bmlt_minutes_sort_order', 'desc' );
 		$max_upload_mb  = (int) get_option( self::OPTION_MAX_UPLOAD_MB, self::DEFAULT_MAX_UPLOAD_MB );
 		$server_cap_mb  = (int) floor( wp_max_upload_size() / ( 1024 * 1024 ) );
@@ -1050,24 +1046,6 @@ class BMLT_Minutes {
 				<?php settings_fields( 'bmlt-minutes-group' ); ?>
 
 				<table class="form-table">
-					<tr>
-						<th scope="row"><label for="bmlt_minutes_server"><?php esc_html_e( 'BMLT Server URL', 'bmlt-minutes' ); ?></label></th>
-						<td>
-							<input type="url" id="bmlt_minutes_server" name="bmlt_minutes_server"
-								   value="<?php echo esc_attr( $server ); ?>"
-								   class="regular-text" placeholder="https://your-server/main_server/" />
-							<p class="description"><?php esc_html_e( 'Optional. Used for service body lookups and documentation links.', 'bmlt-minutes' ); ?></p>
-						</td>
-					</tr>
-					<tr>
-						<th scope="row"><label for="bmlt_minutes_service_body"><?php esc_html_e( 'Service Body ID', 'bmlt-minutes' ); ?></label></th>
-						<td>
-							<input type="text" id="bmlt_minutes_service_body" name="bmlt_minutes_service_body"
-								   value="<?php echo esc_attr( $service_body ); ?>"
-								   class="regular-text" placeholder="42" />
-							<p class="description"><?php esc_html_e( 'Optional. The BMLT service body this site represents (informational).', 'bmlt-minutes' ); ?></p>
-						</td>
-					</tr>
 					<tr>
 						<th scope="row"><label for="bmlt_minutes_sort_order"><?php esc_html_e( 'Default Sort Order', 'bmlt-minutes' ); ?></label></th>
 						<td>
