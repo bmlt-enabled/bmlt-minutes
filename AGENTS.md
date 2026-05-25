@@ -99,8 +99,6 @@ For protecting the **entire page** that hosts `[minutes]`, the plugin deliberate
 
 | Option key | Used for |
 |---|---|
-| `bmlt_minutes_server` | BMLT root server URL (informational; no calls made currently) |
-| `bmlt_minutes_service_body` | Service body ID (informational) |
 | `bmlt_minutes_sort_order` | Default `[minutes]` sort (`desc` / `asc`) |
 | `bmlt_minutes_max_upload_mb` | Per-file upload cap in MB. Default 10. Clamped to `wp_max_upload_size()` on save. |
 

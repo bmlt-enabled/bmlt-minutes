@@ -36,8 +36,6 @@ Configured under **Minutes → Settings**.
 
 | Setting              | Description                                                                  |
 |----------------------|------------------------------------------------------------------------------|
-| BMLT Server URL      | Optional. Informational link back to the service body's BMLT root server.    |
-| Service Body ID      | Optional. BMLT service body this site represents.                            |
 | Default Sort Order   | `desc` (newest first) or `asc`. Applies when `[minutes]` has no `order` attr. |
 | Maximum Upload Size  | Per-file cap (MB) applied to uploads on the Minutes editor. Default 10 MB. Clamped to the server limit on save. |
 

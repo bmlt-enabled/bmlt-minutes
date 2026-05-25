@@ -55,7 +55,7 @@ Shortcode attributes:
 
 1. Upload the plugin files to `/wp-content/plugins/bmlt-minutes/`, or install via the Plugins screen.
 2. Activate the plugin through the Plugins screen in WordPress.
-3. (Optional) Open **Minutes → Settings** to set your BMLT server URL and default sort.
+3. (Optional) Open **Minutes → Settings** to set your default sort order and upload size cap.
 4. Add minutes under **Minutes → Add New** — upload a file or paste a Google Doc / external link, choose a committee, set the meeting date, publish.
 5. Add `[minutes]` to any page or post.
 
@@ -67,7 +67,7 @@ Uploaded files go into the standard WordPress Media Library. External links (Goo
 
 = Can I use this without BMLT? =
 
-Yes. The plugin works as a standalone document-list plugin. The BMLT server URL setting is optional and only used to surface contextual info — no calls are made unless you choose to integrate later.
+Yes. The plugin works as a standalone document-list plugin — it makes no calls to any BMLT server.
 
 = Can I add my own committees? =
 
