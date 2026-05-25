@@ -5,7 +5,7 @@ Tags: meeting minutes, pdf, documents, agenda, bmlt
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 8.0
-Stable tag: 1.0.1
+Stable tag: 1.0.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -112,6 +112,9 @@ Fixes the Default Sort Order setting and ensures minutes without a meeting date 
 Initial release.
 
 == Changelog ==
+
+= 1.0.2 =
+* Removed the unused BMLT Server URL and Service Body ID settings.
 
 = 1.0.1 =
 * Fixed: the Default Sort Order setting now applies to the `[minutes]` shortcode when no `order` attribute is provided.
