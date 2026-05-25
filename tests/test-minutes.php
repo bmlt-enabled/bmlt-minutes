@@ -21,8 +21,8 @@ class Test_BMLT_Minutes extends WP_UnitTestCase {
 
 	/**
 	 * Helper: create a published Minutes post with the meta_date set.
-	 * The shortcode query orderby='meta_value' on META_DATE does an INNER JOIN, so
-	 * posts without that meta won't appear in the rendered list.
+	 * Pass an empty string for $date to create an undated post (no META_DATE row);
+	 * the shortcode still lists those (see test_render_shortcode_includes_undated_minutes).
 	 */
 	private function make_minutes( array $args = [], string $date = '2026-05-01' ): int {
 		$post_id = self::factory()->post->create(
@@ -34,7 +34,9 @@ class Test_BMLT_Minutes extends WP_UnitTestCase {
 				$args
 			)
 		);
-		update_post_meta( $post_id, BMLT_Minutes::META_DATE, $date );
+		if ( '' !== $date ) {
+			update_post_meta( $post_id, BMLT_Minutes::META_DATE, $date );
+		}
 		return $post_id;
 	}
 
@@ -254,6 +256,39 @@ class Test_BMLT_Minutes extends WP_UnitTestCase {
 
 		$this->assertStringContainsString( 'Newer Minutes', $html );
 		$this->assertStringNotContainsString( 'Old Minutes', $html );
+	}
+
+	public function test_render_shortcode_includes_undated_minutes(): void {
+		$this->make_minutes( [ 'post_title' => 'Dated Minutes' ], '2026-05-01' );
+		$this->make_minutes( [ 'post_title' => 'Undated Minutes' ], '' );
+
+		$html = do_shortcode( '[minutes group_by="none"]' );
+
+		$this->assertStringContainsString( 'Dated Minutes', $html );
+		$this->assertStringContainsString( 'Undated Minutes', $html );
+	}
+
+	public function test_render_shortcode_uses_saved_sort_order_when_no_attr(): void {
+		$this->make_minutes( [ 'post_title' => 'January Minutes' ], '2026-01-01' );
+		$this->make_minutes( [ 'post_title' => 'December Minutes' ], '2026-12-01' );
+
+		update_option( 'bmlt_minutes_sort_order', 'asc' );
+		$asc = do_shortcode( '[minutes group_by="none"]' );
+		$this->assertLessThan(
+			strpos( $asc, 'December Minutes' ),
+			strpos( $asc, 'January Minutes' ),
+			'With sort order "asc" the oldest minutes should render first.'
+		);
+
+		update_option( 'bmlt_minutes_sort_order', 'desc' );
+		$desc = do_shortcode( '[minutes group_by="none"]' );
+		$this->assertLessThan(
+			strpos( $desc, 'January Minutes' ),
+			strpos( $desc, 'December Minutes' ),
+			'With sort order "desc" the newest minutes should render first.'
+		);
+
+		delete_option( 'bmlt_minutes_sort_order' );
 	}
 
 	public function test_render_shortcode_filters_by_committee_slug(): void {
