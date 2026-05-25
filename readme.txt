@@ -5,7 +5,7 @@ Tags: meeting minutes, pdf, documents, agenda, bmlt
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 8.0
-Stable tag: 1.0.0
+Stable tag: 1.0.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -105,10 +105,17 @@ Yes. The `uninstall.php` script removes the plugin's settings and deletes all mi
 
 == Upgrade Notice ==
 
+= 1.0.1 =
+Fixes the Default Sort Order setting and ensures minutes without a meeting date still appear in the [minutes] list.
+
 = 1.0.0 =
 Initial release.
 
 == Changelog ==
+
+= 1.0.1 =
+* Fixed: the Default Sort Order setting now applies to the `[minutes]` shortcode when no `order` attribute is provided.
+* Fixed: published minutes with no meeting date are no longer excluded from the `[minutes]` list.
 
 = 1.0.0 =
 * Initial release.

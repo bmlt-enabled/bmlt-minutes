@@ -3,7 +3,7 @@
  * Plugin Name: BMLT Minutes
  * Plugin URI: https://wordpress.org/plugins/bmlt-minutes/
  * Description: Publish NA service committee meeting minutes (PDF, DOCX, XLSX, Google Doc links) with a simple shortcode.
- * Version: 1.0.0
+ * Version: 1.0.1
  * Author: bmltenabled
  * Author URI: https://bmlt.app
  * License: GPL v2 or later
@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'BMLT_MINUTES_VERSION', '1.0.0' );
+define( 'BMLT_MINUTES_VERSION', '1.0.1' );
 define( 'BMLT_MINUTES_FILE', __FILE__ );
 define( 'BMLT_MINUTES_URL', plugin_dir_url( __FILE__ ) );
 define( 'BMLT_MINUTES_PATH', plugin_dir_path( __FILE__ ) );
@@ -823,7 +823,7 @@ class BMLT_Minutes {
 				'committee'    => '',
 				'year'         => '',
 				'limit'        => -1,
-				'order'        => 'desc',
+				'order'        => get_option( 'bmlt_minutes_sort_order', 'desc' ),
 				'group_by'     => 'committee',
 				'show_excerpt' => 'false',
 			],
@@ -833,14 +833,32 @@ class BMLT_Minutes {
 
 		wp_enqueue_style( 'bmlt-minutes' );
 
+		$order = 'asc' === strtolower( (string) $atts['order'] ) ? 'ASC' : 'DESC';
+
 		// phpcs:disable WordPress.DB.SlowDBQuery.slow_db_query_meta_key,WordPress.DB.SlowDBQuery.slow_db_query_tax_query,WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- A minutes archive inherently needs to filter by committee taxonomy and meeting-date meta. Site owners can add an index on _bmlt_minutes_date if their dataset is huge; for a typical service-body list this is fine.
 		$args = [
 			'post_type'      => self::CPT,
 			'post_status'    => 'publish',
 			'posts_per_page' => (int) $atts['limit'],
-			'meta_key'       => self::META_DATE,
-			'orderby'        => 'meta_value',
-			'order'          => 'asc' === strtolower( (string) $atts['order'] ) ? 'ASC' : 'DESC',
+			// Include posts whether or not they have a meeting date so undated minutes
+			// still appear; a plain meta_key would force an INNER JOIN that drops them.
+			'meta_query'     => [
+				'relation' => 'OR',
+				'has_date' => [
+					'key'     => self::META_DATE,
+					'compare' => 'EXISTS',
+				],
+				'no_date'  => [
+					'key'     => self::META_DATE,
+					'compare' => 'NOT EXISTS',
+				],
+			],
+			// Order dated posts by meeting date, then fall back to post date for the rest.
+			'orderby'        => [
+				'has_date' => $order,
+				'date'     => $order,
+			],
+			'order'          => $order,
 		];
 
 		if ( '' !== $atts['committee'] ) {
@@ -857,9 +875,11 @@ class BMLT_Minutes {
 		}
 
 		if ( '' !== $atts['year'] && ctype_digit( (string) $atts['year'] ) ) {
-			$year                = (int) $atts['year'];
-			$args['meta_query']  = [
-				[
+			$year               = (int) $atts['year'];
+			// Filtering to a year inherently requires a meeting date, so undated posts
+			// are correctly excluded here; replace the OR clause with a date range.
+			$args['meta_query'] = [
+				'has_date' => [
 					'key'     => self::META_DATE,
 					'value'   => [ sprintf( '%04d-01-01', $year ), sprintf( '%04d-12-31', $year ) ],
 					'compare' => 'BETWEEN',
