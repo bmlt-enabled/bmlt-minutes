@@ -510,4 +510,354 @@ class Test_BMLT_Minutes extends WP_UnitTestCase {
 
 		$_POST = [];
 	}
+
+	// -------------------------------------------------------------------------
+	// Committee scope
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Helper: Area A (with an H&I child), Area B, and a Minutes Manager scoped to Area A.
+	 *
+	 * @return array{area_a:int,area_a_hi:int,area_b:int,user:int}
+	 */
+	private function make_scoped_fixture(): array {
+		$area_a    = wp_insert_term( 'Area A', BMLT_Minutes::TAX_COMMITTEE )['term_id'];
+		$area_a_hi = wp_insert_term( 'Area A H&I', BMLT_Minutes::TAX_COMMITTEE, [ 'parent' => $area_a ] )['term_id'];
+		$area_b    = wp_insert_term( 'Area B', BMLT_Minutes::TAX_COMMITTEE )['term_id'];
+		$user      = self::factory()->user->create( [ 'role' => BMLT_Minutes::ROLE_MANAGER ] );
+		update_user_meta( $user, BMLT_Minutes::USER_META_COMMITTEES, [ $area_a ] );
+		// Term hierarchy is cached per request; a freshly inserted child isn't in it yet.
+		delete_option( BMLT_Minutes::TAX_COMMITTEE . '_children' );
+		return compact( 'area_a', 'area_a_hi', 'area_b', 'user' );
+	}
+
+	/**
+	 * Helper: run the Minutes list query as the main query so pre_get_posts
+	 * handlers that check is_main_query() apply, then restore the global.
+	 *
+	 * @return int[]
+	 */
+	private function run_admin_list_query(): array {
+		$previous               = $GLOBALS['wp_the_query'];
+		$query                  = new WP_Query();
+		$GLOBALS['wp_the_query'] = $query;
+		try {
+			return $query->query(
+				[
+					'post_type'      => BMLT_Minutes::CPT,
+					'post_status'    => 'any',
+					'posts_per_page' => -1,
+					'fields'         => 'ids',
+				]
+			);
+		} finally {
+			$GLOBALS['wp_the_query'] = $previous;
+		}
+	}
+
+	public function test_committee_scope_is_null_when_unset_and_for_admins(): void {
+		$manager = self::factory()->user->create( [ 'role' => BMLT_Minutes::ROLE_MANAGER ] );
+		$this->assertNull( BMLT_Minutes::committee_scope( $manager ) );
+
+		$admin = self::factory()->user->create( [ 'role' => 'administrator' ] );
+		update_user_meta( $admin, BMLT_Minutes::USER_META_COMMITTEES, [ 999999 ] );
+		$this->assertNull( BMLT_Minutes::committee_scope( $admin ), 'Administrators are never scoped.' );
+	}
+
+	public function test_committee_scope_includes_descendants_and_fails_closed(): void {
+		$f     = $this->make_scoped_fixture();
+		$scope = BMLT_Minutes::committee_scope( $f['user'] );
+		$this->assertEqualsCanonicalizing( [ $f['area_a'], $f['area_a_hi'] ], $scope );
+
+		wp_delete_term( $f['area_a_hi'], BMLT_Minutes::TAX_COMMITTEE );
+		wp_delete_term( $f['area_a'], BMLT_Minutes::TAX_COMMITTEE );
+		$this->assertSame( [], BMLT_Minutes::committee_scope( $f['user'] ), 'Deleting every scoped committee must not widen access to everything.' );
+	}
+
+	public function test_scoped_user_can_edit_in_scope_and_child_but_not_out_of_scope(): void {
+		$f = $this->make_scoped_fixture();
+
+		$in_scope = $this->make_minutes();
+		wp_set_object_terms( $in_scope, [ $f['area_a'] ], BMLT_Minutes::TAX_COMMITTEE );
+		$in_child = $this->make_minutes();
+		wp_set_object_terms( $in_child, [ $f['area_a_hi'] ], BMLT_Minutes::TAX_COMMITTEE );
+		$outside = $this->make_minutes();
+		wp_set_object_terms( $outside, [ $f['area_b'] ], BMLT_Minutes::TAX_COMMITTEE );
+
+		$this->assertTrue( user_can( $f['user'], 'edit_post', $in_scope ) );
+		$this->assertTrue( user_can( $f['user'], 'edit_post', $in_child ) );
+		$this->assertFalse( user_can( $f['user'], 'edit_post', $outside ) );
+		$this->assertFalse( user_can( $f['user'], 'delete_post', $outside ) );
+		$this->assertFalse( user_can( $f['user'], 'publish_post', $outside ) );
+
+		// An unscoped manager is unaffected.
+		$other = self::factory()->user->create( [ 'role' => BMLT_Minutes::ROLE_MANAGER ] );
+		$this->assertTrue( user_can( $other, 'edit_post', $outside ) );
+	}
+
+	public function test_scoped_user_can_edit_own_uncategorized_post_only(): void {
+		$f     = $this->make_scoped_fixture();
+		$own   = $this->make_minutes( [ 'post_author' => $f['user'] ] );
+		$admin = self::factory()->user->create( [ 'role' => 'administrator' ] );
+		$other = $this->make_minutes( [ 'post_author' => $admin ] );
+
+		$this->assertTrue( user_can( $f['user'], 'edit_post', $own ), 'A new draft has no committee yet; its author must still be able to edit it.' );
+		$this->assertFalse( user_can( $f['user'], 'edit_post', $other ) );
+	}
+
+	public function test_scope_does_not_affect_other_post_types(): void {
+		$f       = $this->make_scoped_fixture();
+		$user    = get_user_by( 'id', $f['user'] );
+		$user->add_cap( 'edit_posts' );
+		$post_id = self::factory()->post->create(
+			[
+				'post_status' => 'draft',
+				'post_author' => $f['user'],
+			]
+		);
+		$this->assertTrue( user_can( $f['user'], 'edit_post', $post_id ) );
+	}
+
+	public function test_term_listing_is_narrowed_in_admin_for_scoped_user(): void {
+		$f = $this->make_scoped_fixture();
+		wp_set_current_user( $f['user'] );
+		set_current_screen( 'edit-' . BMLT_Minutes::CPT );
+
+		$ids = get_terms(
+			[
+				'taxonomy'   => BMLT_Minutes::TAX_COMMITTEE,
+				'hide_empty' => false,
+				'fields'     => 'ids',
+			]
+		);
+		$this->assertEqualsCanonicalizing( [ $f['area_a'], $f['area_a_hi'] ], $ids );
+
+		$objects = get_terms(
+			[
+				'taxonomy'   => BMLT_Minutes::TAX_COMMITTEE,
+				'hide_empty' => false,
+			]
+		);
+		$this->assertEqualsCanonicalizing( [ $f['area_a'], $f['area_a_hi'] ], wp_list_pluck( $objects, 'term_id' ) );
+
+		// A post's own terms are never filtered, otherwise the scope check would see nothing.
+		$post_id = $this->make_minutes();
+		wp_set_current_user( 0 );
+		wp_set_object_terms( $post_id, [ $f['area_b'] ], BMLT_Minutes::TAX_COMMITTEE );
+		wp_set_current_user( $f['user'] );
+		$this->assertSame( [ $f['area_b'] ], wp_get_object_terms( $post_id, BMLT_Minutes::TAX_COMMITTEE, [ 'fields' => 'ids' ] ) );
+
+		set_current_screen( 'front' );
+		wp_set_current_user( 0 );
+	}
+
+	public function test_term_listing_is_not_narrowed_on_frontend(): void {
+		$f = $this->make_scoped_fixture();
+		wp_set_current_user( $f['user'] );
+		set_current_screen( 'front' );
+
+		$ids = get_terms(
+			[
+				'taxonomy'   => BMLT_Minutes::TAX_COMMITTEE,
+				'hide_empty' => false,
+				'fields'     => 'ids',
+			]
+		);
+		$this->assertContains( $f['area_b'], $ids );
+		wp_set_current_user( 0 );
+	}
+
+	public function test_out_of_scope_terms_are_stripped_on_assignment(): void {
+		$f       = $this->make_scoped_fixture();
+		$post_id = $this->make_minutes( [ 'post_author' => $f['user'] ] );
+		wp_set_current_user( $f['user'] );
+
+		wp_set_object_terms( $post_id, [ $f['area_a'], $f['area_b'] ], BMLT_Minutes::TAX_COMMITTEE );
+
+		$this->assertSame( [ $f['area_a'] ], wp_get_object_terms( $post_id, BMLT_Minutes::TAX_COMMITTEE, [ 'fields' => 'ids' ] ) );
+		wp_set_current_user( 0 );
+	}
+
+	public function test_rest_publish_requires_in_scope_committee(): void {
+		$f = $this->make_scoped_fixture();
+		wp_set_current_user( $f['user'] );
+
+		$request = new WP_REST_Request( 'POST', '/wp/v2/' . BMLT_Minutes::CPT );
+		$request->set_param( 'title', 'Area minutes' );
+		$request->set_param( 'status', 'publish' );
+
+		$request->set_param( BMLT_Minutes::TAX_COMMITTEE, [ $f['area_b'] ] );
+		$response = rest_get_server()->dispatch( $request );
+		$this->assertSame( 400, $response->get_status() );
+		$this->assertSame( 'bmlt_minutes_committee_required', $response->as_error()->get_error_code() );
+
+		$request->set_param( BMLT_Minutes::TAX_COMMITTEE, [] );
+		$response = rest_get_server()->dispatch( $request );
+		$this->assertSame( 400, $response->get_status(), 'Publishing with no committee at all must be refused for scoped users.' );
+
+		$request->set_param( BMLT_Minutes::TAX_COMMITTEE, [ $f['area_a_hi'], $f['area_b'] ] );
+		$response = rest_get_server()->dispatch( $request );
+		$this->assertSame( 201, $response->get_status() );
+		$post_id = (int) $response->get_data()['id'];
+		$this->assertSame( 'publish', get_post_status( $post_id ) );
+		$this->assertSame( [ $f['area_a_hi'] ], wp_get_object_terms( $post_id, BMLT_Minutes::TAX_COMMITTEE, [ 'fields' => 'ids' ] ), 'The out-of-scope committee must be dropped even when sent alongside a valid one.' );
+
+		wp_set_current_user( 0 );
+	}
+
+	public function test_rest_publish_is_unrestricted_for_unscoped_user(): void {
+		$f     = $this->make_scoped_fixture();
+		$other = self::factory()->user->create( [ 'role' => BMLT_Minutes::ROLE_MANAGER ] );
+		wp_set_current_user( $other );
+
+		$request = new WP_REST_Request( 'POST', '/wp/v2/' . BMLT_Minutes::CPT );
+		$request->set_param( 'title', 'Anywhere' );
+		$request->set_param( 'status', 'publish' );
+		$request->set_param( BMLT_Minutes::TAX_COMMITTEE, [ $f['area_b'] ] );
+		$response = rest_get_server()->dispatch( $request );
+		$this->assertSame( 201, $response->get_status() );
+
+		wp_set_current_user( 0 );
+	}
+
+	public function test_classic_publish_without_in_scope_committee_is_demoted_to_draft(): void {
+		$f = $this->make_scoped_fixture();
+		wp_set_current_user( $f['user'] );
+
+		$post_id = wp_insert_post(
+			[
+				'post_type'   => BMLT_Minutes::CPT,
+				'post_title'  => 'Forgot the committee',
+				'post_status' => 'publish',
+				'post_author' => $f['user'],
+				'tax_input'   => [ BMLT_Minutes::TAX_COMMITTEE => [ '0', (string) $f['area_b'] ] ],
+			]
+		);
+		$this->assertSame( 'draft', get_post_status( $post_id ) );
+		$this->assertSame( [], wp_get_object_terms( $post_id, BMLT_Minutes::TAX_COMMITTEE, [ 'fields' => 'ids' ] ) );
+		$this->assertStringContainsString( 'bmlt_minutes_committee_required=1', BMLT_Minutes::scope_redirect_notice( 'post.php?post=1&action=edit' ) );
+
+		$post_id = wp_insert_post(
+			[
+				'post_type'   => BMLT_Minutes::CPT,
+				'post_title'  => 'Filed correctly',
+				'post_status' => 'publish',
+				'post_author' => $f['user'],
+				'tax_input'   => [ BMLT_Minutes::TAX_COMMITTEE => [ '0', (string) $f['area_a'] ] ],
+			]
+		);
+		$this->assertSame( 'publish', get_post_status( $post_id ) );
+
+		wp_set_current_user( 0 );
+	}
+
+	public function test_admin_list_is_narrowed_to_scope(): void {
+		$f = $this->make_scoped_fixture();
+
+		$in_scope = $this->make_minutes( [ 'post_title' => 'Area A minutes' ] );
+		wp_set_object_terms( $in_scope, [ $f['area_a_hi'] ], BMLT_Minutes::TAX_COMMITTEE );
+		$outside = $this->make_minutes( [ 'post_title' => 'Area B minutes' ] );
+		wp_set_object_terms( $outside, [ $f['area_b'] ], BMLT_Minutes::TAX_COMMITTEE );
+		$uncategorized = $this->make_minutes( [ 'post_title' => 'No committee' ] );
+
+		wp_set_current_user( $f['user'] );
+		set_current_screen( 'edit-' . BMLT_Minutes::CPT );
+
+		$ids = $this->run_admin_list_query();
+		$this->assertContains( $in_scope, $ids );
+		$this->assertContains( $uncategorized, $ids );
+		$this->assertNotContains( $outside, $ids );
+
+		set_current_screen( 'front' );
+		wp_set_current_user( 0 );
+	}
+
+	public function test_admin_list_is_not_narrowed_for_unscoped_user(): void {
+		$f       = $this->make_scoped_fixture();
+		$outside = $this->make_minutes( [ 'post_title' => 'Area B minutes' ] );
+		wp_set_object_terms( $outside, [ $f['area_b'] ], BMLT_Minutes::TAX_COMMITTEE );
+		$other = self::factory()->user->create( [ 'role' => BMLT_Minutes::ROLE_MANAGER ] );
+
+		wp_set_current_user( $other );
+		set_current_screen( 'edit-' . BMLT_Minutes::CPT );
+
+		$ids = $this->run_admin_list_query();
+		$this->assertContains( $outside, $ids );
+
+		set_current_screen( 'front' );
+		wp_set_current_user( 0 );
+	}
+
+	public function test_profile_save_stores_valid_committees_and_clears_when_empty(): void {
+		$f        = $this->make_scoped_fixture();
+		$admin_id = self::factory()->user->create( [ 'role' => 'administrator' ] );
+		wp_set_current_user( $admin_id );
+
+		$_POST = [
+			BMLT_Minutes::USER_CAP_NONCE_FIELD => wp_create_nonce( BMLT_Minutes::USER_CAP_NONCE_ACTION ),
+			'bmlt_minutes_committees'          => [ (string) $f['area_b'], '999999', 'junk', (string) $f['area_b'] ],
+		];
+		BMLT_Minutes::save_user_capability_field( $f['user'] );
+		$this->assertSame( [ $f['area_b'] ], BMLT_Minutes::selected_committees( $f['user'] ) );
+
+		$_POST = [
+			BMLT_Minutes::USER_CAP_NONCE_FIELD => wp_create_nonce( BMLT_Minutes::USER_CAP_NONCE_ACTION ),
+		];
+		BMLT_Minutes::save_user_capability_field( $f['user'] );
+		$this->assertSame( [], BMLT_Minutes::selected_committees( $f['user'] ) );
+		$this->assertNull( BMLT_Minutes::committee_scope( $f['user'] ) );
+
+		$_POST = [];
+		wp_set_current_user( 0 );
+	}
+
+	public function test_profile_save_requires_promote_users_for_scope(): void {
+		$f         = $this->make_scoped_fixture();
+		$author_id = self::factory()->user->create( [ 'role' => 'author' ] );
+		wp_set_current_user( $author_id );
+
+		$_POST = [
+			BMLT_Minutes::USER_CAP_NONCE_FIELD => wp_create_nonce( BMLT_Minutes::USER_CAP_NONCE_ACTION ),
+			'bmlt_minutes_committees'          => [ (string) $f['area_b'] ],
+		];
+		BMLT_Minutes::save_user_capability_field( $f['user'] );
+		$this->assertSame( [ $f['area_a'] ], BMLT_Minutes::selected_committees( $f['user'] ) );
+
+		$_POST = [];
+		wp_set_current_user( 0 );
+	}
+
+	public function test_profile_field_renders_committee_checklist(): void {
+		$f        = $this->make_scoped_fixture();
+		$admin_id = self::factory()->user->create( [ 'role' => 'administrator' ] );
+		wp_set_current_user( $admin_id );
+
+		ob_start();
+		BMLT_Minutes::render_user_capability_field( get_user_by( 'id', $f['user'] ) );
+		$html = (string) ob_get_clean();
+
+		$this->assertStringContainsString( 'Committee Scope', $html );
+		$this->assertMatchesRegularExpression( '/value="' . $f['area_a'] . '"\s+checked=/', $html );
+		$this->assertDoesNotMatchRegularExpression( '/value="' . $f['area_b'] . '"\s+checked=/', $html );
+		$this->assertStringContainsString( 'value="' . $f['area_b'] . '"', $html );
+		$this->assertStringContainsString( 'Area A H&amp;I', $html );
+
+		wp_set_current_user( 0 );
+	}
+
+	public function test_render_shortcode_groups_nested_committees_by_full_path(): void {
+		$f = $this->make_scoped_fixture();
+		wp_insert_term( 'Area B H&I', BMLT_Minutes::TAX_COMMITTEE, [ 'parent' => $f['area_b'] ] );
+		$area_b_hi = get_term_by( 'name', 'Area B H&I', BMLT_Minutes::TAX_COMMITTEE )->term_id;
+
+		$post_a = $this->make_minutes( [ 'post_title' => 'A HI minutes' ] );
+		wp_set_object_terms( $post_a, [ $f['area_a_hi'] ], BMLT_Minutes::TAX_COMMITTEE );
+		$post_b = $this->make_minutes( [ 'post_title' => 'B HI minutes' ] );
+		wp_set_object_terms( $post_b, [ $area_b_hi ], BMLT_Minutes::TAX_COMMITTEE );
+
+		$html = do_shortcode( '[bmlt_minutes]' );
+
+		$this->assertStringContainsString( 'Area A / Area A H&amp;I', $html );
+		$this->assertStringContainsString( 'Area B / Area B H&amp;I', $html );
+	}
 }

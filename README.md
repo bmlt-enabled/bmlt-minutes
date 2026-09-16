@@ -59,6 +59,18 @@ Some service bodies redact personal details from minutes before posting, others 
 
 Default behavior with no password is fully public access.
 
+## Committee Scope
+
+By default anyone with minutes access can edit every committee's minutes. To limit a user to a subset, open their profile (**Users → edit user**) and tick committees under **Committee Scope** in the Meeting Minutes section. A scoped user:
+
+- can only add, edit, and delete minutes filed under those committees (sub-committees included);
+- sees only those committees in the editor and the Minutes list;
+- must choose one of their committees before publishing.
+
+Leave every box unchecked for access to all committees. Administrators are never restricted.
+
+For a region hosting several areas, nest each area's committees under the area (Area A → Hospitals & Institutions, Area B → Hospitals & Institutions) and scope each area's uploader to their area. Grouped output labels nested committees by their full path, so same-named sub-committees stay separate.
+
 ## Supported File Types
 
 PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, ODT, ODS, ODP, TXT, RTF, CSV — plus arbitrary URLs (Google Docs, Dropbox, OneDrive, anywhere else).

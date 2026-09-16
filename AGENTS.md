@@ -74,12 +74,28 @@ The CPT uses its **own** capability set (`capability_type => ['bmlt_minute','bml
 
 `render_user_capability_field()` / `save_user_capability_field()` add a "Can manage minutes" checkbox to the user-edit screen (`show_user_profile` / `edit_user_profile`), gated on `current_user_can('promote_users')`. Ticking it grants the minutes caps + `upload_files` at the **user** level (via `WP_User::add_cap`), so an existing Author/Editor/Subscriber gets minutes access without changing their role. If the user's role already grants `PRIMARY_CAP` (`user_role_grants_minutes()`), the checkbox renders disabled and the save path no-ops — manage it via the role instead.
 
+### Committee scope
+
+`USER_META_COMMITTEES` (`_bmlt_minutes_committees`) holds an array of committee term IDs per user, edited via the Committee Scope checklist on the same profile section as the access toggle (`render_committee_checklist()` / `save_committee_scope()`). `committee_scope( $user_id )` is the single resolver: it returns `null` for unrestricted users (no meta, or anyone with `manage_options` — admins are never scoped), otherwise the selected IDs plus every descendant via `get_term_children()`. A scope whose terms were all deleted resolves to `[]` (nothing allowed), never `null` — fail closed.
+
+Enforcement points, all no-ops when `committee_scope()` is `null`:
+
+- `scope_meta_cap` (`map_meta_cap`) — `edit_post` / `delete_post` / `publish_post` on a `bmlt_minutes` post become `do_not_allow` unless the post carries an in-scope committee. An **uncategorized** post is allowed only for its author, so a scoped user can open a fresh auto-draft and finish it.
+- `scope_term_listing` (`get_terms`) — in wp-admin / REST, narrows `all` and `ids` listings of `bmlt_committee` to the scope so the classic checklist and the block editor's panel only offer assignable terms. Queries with `object_ids` (a post's own terms) are never touched — the scope checks depend on them. The fields check runs **before** the scope lookup on purpose: `get_term_children()` rebuilds the hierarchy cache through `get_terms( fields => 'id=>parent' )`, and consulting the scope there recurses forever on a cold cache.
+- `scope_assigned_terms` (`set_object_terms`) — server-side guard: strips any out-of-scope committee the request managed to attach. WP has no per-term assign cap, so this is the only place that closes the hole for every write path.
+- `scope_rest_insert` (`rest_pre_insert_bmlt_minutes`) — block editor path; returns a 400 `WP_Error` when publishing without an in-scope committee. Terms are on the request but written after the post, so this is the only point where both are known before anything is saved.
+- `scope_classic_publish` (`wp_insert_post_data`) — classic editor / quick edit path; demotes a publish without an in-scope committee in `tax_input` to `draft` and tags the redirect (`scope_redirect_notice`) so `scope_admin_notice` can explain why.
+- `scope_admin_list` (`pre_get_posts`) — narrows the Minutes list table to in-scope terms OR uncategorized (mostly the user's own drafts; `map_meta_cap` hides edit links on the rest). Nested under a top-level `AND` so column-link filters still combine correctly.
+
+Public viewing is untouched — scope is about who may *write* where. Front-end `get_terms` calls are never narrowed. The REST posts collection isn't narrowed either (the list table is classic), only writes are gated.
+
 Gotchas for future changes:
 - `PRIMARY_CAP` (`edit_bmlt_minutes`) is the "can touch minutes" gate. The `register_post_meta` `auth_callback`s check it (not the generic `edit_posts`), otherwise Minutes Managers couldn't save meta via REST/Gutenberg.
 - The committee taxonomy sets `assign_terms => PRIMARY_CAP` but leaves `manage/edit/delete_terms => manage_categories`, so managers can categorize posts but not curate the committee list.
 - `save_meta()` uses `current_user_can('edit_post', $post_id)`, which `map_meta_cap` correctly resolves to the CPT caps — no change needed there.
 - The Settings page stays `manage_options` (admin-only); managers don't get to change the upload cap or server URL.
 - If you add a new cap, update `minutes_capabilities()` **and** the hardcoded array in `uninstall.php`.
+- `uninstall.php` also deletes `_bmlt_minutes_committees` user meta; keep that key in sync with `USER_META_COMMITTEES`.
 
 ### Password protection
 
@@ -116,7 +132,7 @@ All three are scoped via `is_minutes_upload_context()` — uploads outside the M
 
 ### Shortcode
 
-`[bmlt_minutes]` — primary public-facing surface. Attributes: `committee`, `year`, `limit`, `order`, `group_by`, `show_excerpt`. Renders into `.bmlt-minutes` with dashicon-prefixed file links. Style hook: `.bmlt-minutes__*` BEM-ish classes. Locked entries get the `.bmlt-minutes__item--locked` modifier and a `.bmlt-minutes__type--locked` "Protected" badge.
+`[bmlt_minutes]` — primary public-facing surface. Attributes: `committee`, `year`, `limit`, `order`, `group_by`, `show_excerpt`. Renders into `.bmlt-minutes` with dashicon-prefixed file links. `group_by="committee"` headings use the first term's full ancestry path (`primary_committee_label()`, e.g. "Area A / Hospitals & Institutions") so same-named sub-committees under different parents don't merge. Style hook: `.bmlt-minutes__*` BEM-ish classes. Locked entries get the `.bmlt-minutes__item--locked` modifier and a `.bmlt-minutes__type--locked` "Protected" badge.
 
 The singular `bmlt_minutes` permalink is also public — used as the unlock surface for password-protected items, and as a fallback link target when neither attachment nor URL is set.
 
@@ -160,7 +176,7 @@ PHPUnit runs against the WordPress test suite via the `wp-phpunit/wp-phpunit` co
 
 - `tests/bootstrap.php` loads wp-phpunit, then manually `require`s `minutes.php` and calls `BMLT_Minutes::activate()` so the CPT/taxonomy/default committees exist for every test run.
 - `tests/wp-tests-config.php` is environment-driven — DB credentials come from `DB_HOST` / `DB_USER` / `DB_PASS` / `DB_NAME` (defaults: `localhost` / `root` / `root` / `wordpress_test`).
-- `tests/test-minutes.php` covers registration, sanitizers, `resolve_document()` precedence, the `[bmlt_minutes]` shortcode (incl. locked-post URL hiding), the `the_content` single-view filter, and the `apply_password_field` nonce-gated post_password write.
+- `tests/test-minutes.php` covers registration, sanitizers, `resolve_document()` precedence, the `[bmlt_minutes]` shortcode (incl. locked-post URL hiding and nested-committee headings), the `the_content` single-view filter, the `apply_password_field` nonce-gated post_password write, roles/caps, and committee scope (cap mapping, term listing, term stripping, REST refusal, classic demotion, list narrowing, profile save). List-narrowing tests run the query as the main query via `run_admin_list_query()` because `pre_get_posts` handlers check `is_main_query()`.
 
 Local one-shot:
 

@@ -5,7 +5,7 @@ Tags: meeting minutes, pdf, documents, agenda, bmlt
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 8.0
-Stable tag: 1.0.3
+Stable tag: 1.1.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -94,6 +94,12 @@ There are two ways:
 
 Administrators and Editors keep full access automatically. Under the hood the Meeting Minutes post type uses its own capabilities (`edit_bmlt_minutes`, `publish_bmlt_minutes`, etc.), so a role-editor plugin can also mix these into any existing role. Curating the committee list stays admin-only; Minutes Managers can assign existing committees but not create new ones.
 
+= Can I limit a user to only certain committees? =
+
+Yes. On the user's profile, the Meeting Minutes section has a **Committee Scope** checklist. Tick one or more committees and that user can only add, edit, and delete minutes filed under those committees (sub-committees are included automatically). They see only their committees in the editor and in the Minutes list, and they can't publish without picking one of them. Leave every box unchecked for access to all committees. Administrators are never restricted.
+
+This suits a region hosting minutes for several areas: nest each area's committees under the area (**Area A → Hospitals & Institutions**, **Area B → Hospitals & Institutions**, and so on), then scope each area's uploader to their area. The `[bmlt_minutes]` list groups nested committees by their full path, so the two H&I committees stay separate.
+
 = Will uninstalling delete my minutes? =
 
 Yes. The `uninstall.php` script removes the plugin's settings and deletes all minutes posts when you delete the plugin via the WordPress admin. Deactivate instead of uninstalling if you want to preserve them.
@@ -105,6 +111,9 @@ Yes. The `uninstall.php` script removes the plugin's settings and deletes all mi
 
 == Upgrade Notice ==
 
+= 1.1.0 =
+Adds per-user Committee Scope. Nested committees are now grouped by their full path in the [bmlt_minutes] list.
+
 = 1.0.3 =
 The shortcode has been renamed from [minutes] to [bmlt_minutes] for a unique prefix. Update any pages using [minutes].
 
@@ -115,6 +124,10 @@ Fixes the Default Sort Order setting and ensures minutes without a meeting date 
 Initial release.
 
 == Changelog ==
+
+= 1.1.0 =
+* Added: **Committee Scope** on the user profile. A scoped user can only add, edit, and delete minutes filed under their chosen committees (and sub-committees), sees only those committees when editing, and must pick one before publishing. Administrators are never restricted.
+* Changed: when grouping by committee, nested committees are labelled with their full path (e.g. "Area A / Hospitals & Institutions") so same-named sub-committees under different parents no longer merge into one group.
 
 = 1.0.3 =
 * Renamed the `[minutes]` shortcode to `[bmlt_minutes]` so the tag carries a plugin-specific prefix and won't collide with other plugins.

@@ -46,6 +46,9 @@ $bmlt_minutes_caps = [
 
 remove_role( 'minutes_manager' );
 
+// Per-user committee scope (BMLT_Minutes::USER_META_COMMITTEES).
+delete_metadata( 'user', 0, '_bmlt_minutes_committees', '', true );
+
 foreach ( wp_roles()->roles as $bmlt_minutes_role_slug => $bmlt_minutes_role_data ) {
 	$bmlt_minutes_role = get_role( $bmlt_minutes_role_slug );
 	if ( ! $bmlt_minutes_role ) {
