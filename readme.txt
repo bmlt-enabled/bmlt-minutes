@@ -3,7 +3,7 @@
 Contributors: bmltenabled, pjaudiomv
 Tags: meeting minutes, pdf, documents, agenda, bmlt
 Requires at least: 6.0
-Tested up to: 7.0
+Tested up to: 7.1
 Requires PHP: 8.0
 Stable tag: 1.1.0
 License: GPLv2 or later
