@@ -48,7 +48,8 @@ Configured under **Minutes → Settings**.
 | `limit`        | `-1`        | Max items to render. `-1` = no limit.                        |
 | `order`        | `desc`      | `desc` (newest first) or `asc`.                              |
 | `group_by`     | `committee` | `committee`, `year`, or `none`.                              |
-| `show_excerpt` | `false`     | `true` to show each post's excerpt under the link.           |
+| `show_excerpt` | `false`     | `true` to show each document under its link as a File block (title, Download button, and a preview for PDFs), with the post's excerpt above it when it has one. Web links and password-protected minutes stay plain links. |
+| `preview_height` | `500`     | PDF preview height in pixels with `show_excerpt="true"`; `0` for no previews. |
 
 ## Password Protection
 

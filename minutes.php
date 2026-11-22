@@ -1192,6 +1192,7 @@ class BMLT_Minutes {
 				'order'        => get_option( 'bmlt_minutes_sort_order', 'desc' ),
 				'group_by'     => 'committee',
 				'show_excerpt' => 'false',
+				'preview_height' => '500',
 			],
 			is_array( $atts ) ? $atts : [],
 			'bmlt_minutes'
@@ -1262,6 +1263,8 @@ class BMLT_Minutes {
 
 		$group_by    = in_array( (string) $atts['group_by'], [ 'committee', 'year', 'none' ], true ) ? (string) $atts['group_by'] : 'committee';
 		$show_excerpt = filter_var( $atts['show_excerpt'], FILTER_VALIDATE_BOOLEAN );
+		$preview      = trim( (string) $atts['preview_height'] );
+		$preview      = ctype_digit( $preview ) && (int) $preview <= 5000 ? (int) $preview : 500;
 
 		$groups = [];
 		foreach ( $query->posts as $post ) {
@@ -1289,7 +1292,7 @@ class BMLT_Minutes {
 			echo '<ul class="bmlt-minutes__list">';
 			foreach ( $posts as $post ) {
 				// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- render_item() escapes all dynamic values internally via esc_html / esc_attr / esc_url.
-				echo self::render_item( $post, $show_excerpt );
+				echo self::render_item( $post, $show_excerpt, $preview );
 			}
 			echo '</ul>';
 		}
@@ -1327,7 +1330,7 @@ class BMLT_Minutes {
 		return $ts ? gmdate( 'Y', $ts ) : __( 'Undated', 'bmlt-minutes' );
 	}
 
-	private static function render_item( WP_Post $post, bool $show_excerpt ): string {
+	private static function render_item( WP_Post $post, bool $show_excerpt, int $preview_height = 500 ): string {
 		$is_locked    = post_password_required( $post );
 		$date_raw     = (string) get_post_meta( $post->ID, self::META_DATE, true );
 		$date_display = $date_raw ? mysql2date( get_option( 'date_format', 'F j, Y' ), $date_raw, true ) : '';
@@ -1369,10 +1372,53 @@ class BMLT_Minutes {
 				<?php if ( '' !== $excerpt ) : ?>
 					<div class="bmlt-minutes__excerpt"><?php echo esc_html( $excerpt ); ?></div>
 				<?php endif; ?>
+				<?php
+				// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- render_document() escapes its values and the File block is rendered by WordPress.
+				echo self::render_document( $post, $preview_height );
+				?>
 			<?php endif; ?>
 		</li>
 		<?php
 		return (string) ob_get_clean();
+	}
+
+	/**
+	 * The document itself, shown under the link by show_excerpt="true": WordPress's File block (core/file, rendered
+	 * by WordPress so its styles and script come with it) with the title, a Download button and, for a PDF, an
+	 * embedded preview. Minutes usually have no text of their own (the document is in post meta, not the content),
+	 * so without this show_excerpt showed nothing. Web pages such as Google Docs, and minutes without a document,
+	 * get nothing here: the link above already opens them.
+	 */
+	private static function render_document( WP_Post $post, int $preview_height ): string {
+		[ $url, , $type ] = self::resolve_document( $post->ID );
+		if ( '' === esc_url( $url ) || ! in_array( $type, self::ALLOWED_EXTENSIONS, true ) ) {
+			return '';
+		}
+		$title   = get_the_title( $post );
+		$id      = wp_unique_id( 'wp-block-file--media-bmlt-minutes-' );
+		$preview = 'pdf' === $type && $preview_height > 0;
+		$attrs   = [];
+		$html    = '<div class="wp-block-file">';
+		if ( $preview ) {
+			$attrs = [
+				'displayPreview' => true,
+				'previewHeight'  => $preview_height,
+			];
+			$html .= '<object class="wp-block-file__embed" data="' . esc_url( $url ) . '" type="application/pdf" style="width:100%;height:' . $preview_height . 'px" aria-label="' . esc_attr( wp_strip_all_tags( $title ) ) . '"></object>';
+		}
+		$html .= '<a id="' . esc_attr( $id ) . '" href="' . esc_url( $url ) . '">' . esc_html( $title ) . '</a>';
+		$html .= '<a href="' . esc_url( $url ) . '" class="wp-block-file__button wp-element-button" download aria-describedby="' . esc_attr( $id ) . '">' . esc_html__( 'Download', 'bmlt-minutes' ) . '</a>';
+		$html .= '</div>';
+
+		return '<div class="bmlt-minutes__document">' . render_block(
+			[
+				'blockName'    => 'core/file',
+				'attrs'        => $attrs,
+				'innerBlocks'  => [],
+				'innerHTML'    => $html,
+				'innerContent' => [ $html ],
+			]
+		) . '</div>';
 	}
 
 	// -------------------------------------------------------------------------
@@ -1480,7 +1526,8 @@ class BMLT_Minutes {
 				<li><code>limit</code> — <?php esc_html_e( 'Max items (-1 = no limit).', 'bmlt-minutes' ); ?></li>
 				<li><code>order</code> — <code>desc</code> <?php esc_html_e( '(newest first)', 'bmlt-minutes' ); ?> | <code>asc</code></li>
 				<li><code>group_by</code> — <code>committee</code> | <code>year</code> | <code>none</code></li>
-				<li><code>show_excerpt</code> — <code>true</code> | <code>false</code></li>
+				<li><code>show_excerpt</code> — <code>true</code> | <code>false</code> — <?php esc_html_e( 'Shows each document under its link, with a preview for PDFs.', 'bmlt-minutes' ); ?></li>
+				<li><code>preview_height</code> — <?php esc_html_e( 'PDF preview height in pixels with show_excerpt="true" (default 500; 0 for none).', 'bmlt-minutes' ); ?></li>
 			</ul>
 		</div>
 		<?php

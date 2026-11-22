@@ -38,7 +38,7 @@ Filter to one committee, group by year:
 
 `[bmlt_minutes committee="hospitals-institutions" group_by="year"]`
 
-Show the 10 most recent, flat list with excerpts:
+Show the 10 most recent, flat list with each document shown under its link:
 
 `[bmlt_minutes limit="10" group_by="none" show_excerpt="true"]`
 
@@ -49,7 +49,8 @@ Shortcode attributes:
 * `limit` — Max items to render. `-1` (default) = no limit.
 * `order` — `desc` (default, newest first) or `asc`.
 * `group_by` — `committee` (default), `year`, or `none`.
-* `show_excerpt` — `true` or `false` (default). Shows each post's excerpt under the link.
+* `show_excerpt` — `true` or `false` (default). Shows each document under its link as a File block (its title and a Download button, and for a PDF a preview), with the post's excerpt above it when it has one. Google Docs and other web links, and password-protected minutes, stay as plain links.
+* `preview_height` — PDF preview height in pixels when `show_excerpt="true"`. Default `500`; `0` shows no previews.
 
 == Installation ==
 

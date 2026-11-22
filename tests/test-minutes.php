@@ -248,6 +248,97 @@ class Test_BMLT_Minutes extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'bmlt-minutes__list', $html );
 	}
 
+	/**
+	 * Minutes as they are usually posted: a document in post meta and no text of their own.
+	 */
+	private function make_document_minutes( string $title, string $url ): int {
+		$post_id = $this->make_minutes(
+			[
+				'post_title'   => $title,
+				'post_content' => '',
+				'post_excerpt' => '',
+			]
+		);
+		update_post_meta( $post_id, BMLT_Minutes::META_URL, $url );
+		return $post_id;
+	}
+
+	public function test_show_excerpt_shows_the_document(): void {
+		$this->make_document_minutes( 'PDF Minutes', 'https://example.org/june.pdf' );
+		$this->make_document_minutes( 'Word Minutes', 'https://example.org/june.docx' );
+
+		$html = do_shortcode( '[bmlt_minutes group_by="none" show_excerpt="true"]' );
+
+		$this->assertSame( 2, substr_count( $html, 'class="bmlt-minutes__document' ), 'Each document is shown as a File block.' );
+		$this->assertSame( 2, substr_count( $html, 'wp-block-file__button' ) );
+		// Only the PDF gets a preview, at the default height.
+		$this->assertSame( 1, substr_count( $html, '<object' ) );
+		$this->assertStringContainsString( 'data="https://example.org/june.pdf"', $html );
+		$this->assertStringContainsString( 'height:500px', $html );
+	}
+
+	public function test_documents_are_not_shown_without_show_excerpt(): void {
+		$this->make_document_minutes( 'PDF Minutes', 'https://example.org/june.pdf' );
+
+		foreach ( [ '[bmlt_minutes group_by="none"]', '[bmlt_minutes group_by="none" show_excerpt="false"]' ] as $shortcode ) {
+			$html = do_shortcode( $shortcode );
+			$this->assertStringContainsString( 'https://example.org/june.pdf', $html );
+			$this->assertStringNotContainsString( 'wp-block-file', $html );
+			$this->assertStringNotContainsString( '<object', $html );
+		}
+	}
+
+	public function test_show_excerpt_preview_height(): void {
+		$this->make_document_minutes( 'PDF Minutes', 'https://example.org/june.pdf' );
+
+		$html = do_shortcode( '[bmlt_minutes group_by="none" show_excerpt="true" preview_height="700"]' );
+		$this->assertStringContainsString( 'height:700px', $html );
+
+		$html = do_shortcode( '[bmlt_minutes group_by="none" show_excerpt="true" preview_height="0"]' );
+		$this->assertStringContainsString( 'wp-block-file__button', $html );
+		$this->assertStringNotContainsString( '<object', $html );
+
+		$html = do_shortcode( '[bmlt_minutes group_by="none" show_excerpt="true" preview_height="tall"]' );
+		$this->assertStringContainsString( 'height:500px', $html );
+	}
+
+	public function test_show_excerpt_keeps_the_excerpt_text(): void {
+		$post_id = $this->make_document_minutes( 'PDF Minutes', 'https://example.org/june.pdf' );
+		wp_update_post(
+			[
+				'ID'           => $post_id,
+				'post_excerpt' => 'Approved budget and new GSR orientation.',
+			]
+		);
+
+		$html = do_shortcode( '[bmlt_minutes group_by="none" show_excerpt="true"]' );
+		$this->assertStringContainsString( 'Approved budget and new GSR orientation.', $html );
+		$this->assertStringContainsString( 'wp-block-file', $html );
+	}
+
+	public function test_show_excerpt_links_web_pages_without_a_file_block(): void {
+		$this->make_document_minutes( 'Google Doc Minutes', 'https://docs.google.com/document/d/abc/edit' );
+
+		$html = do_shortcode( '[bmlt_minutes group_by="none" show_excerpt="true"]' );
+		$this->assertStringContainsString( 'https://docs.google.com/document/d/abc/edit', $html );
+		$this->assertStringNotContainsString( 'wp-block-file', $html );
+	}
+
+	public function test_show_excerpt_never_shows_a_locked_document(): void {
+		$post_id = $this->make_document_minutes( 'Locked Minutes', 'https://example.org/secret.pdf' );
+		wp_update_post(
+			[
+				'ID'            => $post_id,
+				'post_password' => 'letmein',
+			]
+		);
+
+		$html = do_shortcode( '[bmlt_minutes group_by="none" show_excerpt="true"]' );
+		$this->assertStringContainsString( 'Locked Minutes', $html );
+		$this->assertStringNotContainsString( 'secret.pdf', $html );
+		$this->assertStringNotContainsString( 'wp-block-file', $html );
+	}
+
 	public function test_render_shortcode_respects_year_filter(): void {
 		$this->make_minutes( [ 'post_title' => 'Old Minutes' ], '2024-03-01' );
 		$this->make_minutes( [ 'post_title' => 'Newer Minutes' ], '2026-03-01' );
