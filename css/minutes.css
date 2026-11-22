@@ -120,3 +120,11 @@
 		margin-left: 1.75em;
 	}
 }
+
+.bmlt-minutes__document {
+	margin: 0.25em 0 0.75em 1.75em;
+}
+
+.bmlt-minutes__document .wp-block-file {
+	margin-bottom: 0;
+}

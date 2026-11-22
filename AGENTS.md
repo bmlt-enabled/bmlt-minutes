@@ -132,7 +132,7 @@ All three are scoped via `is_minutes_upload_context()` — uploads outside the M
 
 ### Shortcode
 
-`[bmlt_minutes]` — primary public-facing surface. Attributes: `committee`, `year`, `limit`, `order`, `group_by`, `show_excerpt`. Renders into `.bmlt-minutes` with dashicon-prefixed file links. `group_by="committee"` headings use the first term's full ancestry path (`primary_committee_label()`, e.g. "Area A / Hospitals & Institutions") so same-named sub-committees under different parents don't merge. Style hook: `.bmlt-minutes__*` BEM-ish classes. Locked entries get the `.bmlt-minutes__item--locked` modifier and a `.bmlt-minutes__type--locked` "Protected" badge.
+`[bmlt_minutes]` — primary public-facing surface. Attributes: `committee`, `year`, `limit`, `order`, `group_by`, `show_excerpt`, `preview_height`. `show_excerpt="true"` also renders the document itself through `render_document()` as a `core/file` block (PDF preview at `preview_height`), because minutes rarely have an excerpt or body of their own; web links and locked posts get no block. Renders into `.bmlt-minutes` with dashicon-prefixed file links. `group_by="committee"` headings use the first term's full ancestry path (`primary_committee_label()`, e.g. "Area A / Hospitals & Institutions") so same-named sub-committees under different parents don't merge. Style hook: `.bmlt-minutes__*` BEM-ish classes. Locked entries get the `.bmlt-minutes__item--locked` modifier and a `.bmlt-minutes__type--locked` "Protected" badge.
 
 The singular `bmlt_minutes` permalink is also public — used as the unlock surface for password-protected items, and as a fallback link target when neither attachment nor URL is set.
 
