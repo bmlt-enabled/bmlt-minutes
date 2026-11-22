@@ -20,6 +20,8 @@ define( 'BMLT_MINUTES_FILE', __FILE__ );
 define( 'BMLT_MINUTES_URL', plugin_dir_url( __FILE__ ) );
 define( 'BMLT_MINUTES_PATH', plugin_dir_path( __FILE__ ) );
 
+require_once BMLT_MINUTES_PATH . 'includes/class-bmlt-minutes-document-html.php';
+
 class BMLT_Minutes {
 
 	private static ?self $instance = null;
@@ -125,6 +127,7 @@ class BMLT_Minutes {
 		add_action( 'pre_get_posts', [ static::class, 'admin_orderby_meeting_date' ] );
 
 		add_shortcode( 'bmlt_minutes', [ static::class, 'render_shortcode' ] );
+		add_shortcode( 'bmlt_minutes_latest', [ static::class, 'render_latest_shortcode' ] );
 
 		add_filter( 'upload_size_limit', [ static::class, 'cap_upload_size' ] );
 		add_filter( 'wp_handle_upload_prefilter', [ static::class, 'reject_oversize_upload' ] );
@@ -1177,6 +1180,13 @@ class BMLT_Minutes {
 			[ 'dashicons' ],
 			BMLT_MINUTES_VERSION
 		);
+		wp_register_script(
+			'bmlt-minutes-latest',
+			BMLT_MINUTES_URL . 'js/latest.js',
+			[],
+			BMLT_MINUTES_VERSION,
+			[ 'in_footer' => true ]
+		);
 	}
 
 	// -------------------------------------------------------------------------
@@ -1376,6 +1386,226 @@ class BMLT_Minutes {
 	}
 
 	// -------------------------------------------------------------------------
+	// [bmlt_minutes_latest]: a committee's newest minutes, shown whole
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Shortcodes being rendered, so minutes whose own text contains [bmlt_minutes_latest] cannot loop.
+	 */
+	private static int $latest_depth = 0;
+
+	/**
+	 * [bmlt_minutes_latest]: the newest minutes of a committee in full, for a page such as "Area Policy" or "Last
+	 * month's minutes" that always shows the newest version without anyone downloading it.
+	 *
+	 * PDFs are drawn page by page in the browser with PDF.js (js/latest.js, pdfjs/); Word, OpenDocument, Excel, CSV
+	 * and text files are turned into HTML (BMLT_Minutes_Document_HTML, cached as transients); minutes written in the
+	 * post show their text; web links and old binary formats get a link; locked minutes show the password form.
+	 *
+	 * @param mixed $atts Shortcode attributes.
+	 */
+	public static function render_latest_shortcode( $atts ): string {
+		$atts = shortcode_atts(
+			[
+				'committee'     => '',
+				'date'          => 'posted',
+				'heading_level' => '2',
+				'show_title'    => 'true',
+				'show_date'     => 'true',
+				'download'      => 'true',
+			],
+			is_array( $atts ) ? $atts : [],
+			'bmlt_minutes_latest'
+		);
+		if ( self::$latest_depth > 0 ) {
+			return '';
+		}
+		wp_enqueue_style( 'bmlt-minutes' );
+
+		$by_meeting = 'meeting' === strtolower( trim( (string) $atts['date'] ) );
+		$post       = self::latest_minutes( (string) $atts['committee'], $by_meeting );
+		if ( null === $post ) {
+			return '<div class="bmlt-minutes bmlt-minutes--empty">' . esc_html__( 'No minutes published yet.', 'bmlt-minutes' ) . '</div>';
+		}
+		$level = (int) $atts['heading_level'];
+		$yes   = static fn( $v ): bool => false !== filter_var( $v, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE );
+		$args  = [
+			'level'      => $level >= 2 && $level <= 5 ? $level : 2,
+			'show_title' => $yes( $atts['show_title'] ),
+			'show_date'  => $yes( $atts['show_date'] ),
+			'download'   => $yes( $atts['download'] ),
+		];
+
+		++self::$latest_depth;
+		try {
+			return self::render_latest( $post, $args );
+		} finally {
+			--self::$latest_depth;
+		}
+	}
+
+	/**
+	 * The newest published minutes of the committees (slugs, comma-separated; sub-committees included), by posting
+	 * date or, with $by_meeting, by meeting date (undated minutes only when no minutes have a date).
+	 */
+	public static function latest_minutes( string $committee, bool $by_meeting ): ?WP_Post {
+		// phpcs:disable WordPress.DB.SlowDBQuery.slow_db_query_tax_query,WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- As in render_shortcode(): filtering by committee and ordering by meeting date is the point.
+		$args = [
+			'post_type'           => self::CPT,
+			'post_status'         => 'publish',
+			'posts_per_page'      => 1,
+			'no_found_rows'       => true,
+			'ignore_sticky_posts' => true,
+			'orderby'             => [
+				'date' => 'DESC',
+				'ID'   => 'DESC',
+			],
+		];
+		if ( $by_meeting ) {
+			$args['meta_query'] = [
+				'relation' => 'OR',
+				'has_date' => [
+					'key'     => self::META_DATE,
+					'compare' => 'EXISTS',
+				],
+				'no_date'  => [
+					'key'     => self::META_DATE,
+					'compare' => 'NOT EXISTS',
+				],
+			];
+			$args['orderby']    = [
+				'has_date' => 'DESC',
+				'date'     => 'DESC',
+				'ID'       => 'DESC',
+			];
+		}
+		$slugs = array_filter( array_map( 'sanitize_title', array_map( 'trim', explode( ',', $committee ) ) ) );
+		if ( ! empty( $slugs ) ) {
+			$args['tax_query'] = [
+				[
+					'taxonomy' => self::TAX_COMMITTEE,
+					'field'    => 'slug',
+					'terms'    => $slugs,
+				],
+			];
+		}
+		// phpcs:enable WordPress.DB.SlowDBQuery.slow_db_query_tax_query,WordPress.DB.SlowDBQuery.slow_db_query_meta_query
+		$posts = ( new WP_Query( $args ) )->posts;
+		return isset( $posts[0] ) && $posts[0] instanceof WP_Post ? $posts[0] : null;
+	}
+
+	/**
+	 * @param array{level: int, show_title: bool, show_date: bool, download: bool} $args Parsed attributes.
+	 */
+	private static function render_latest( WP_Post $post, array $args ): string {
+		$locked = post_password_required( $post );
+		$h      = 'h' . $args['level'];
+		$out    = '<article class="bmlt-minutes bmlt-minutes-latest" id="' . esc_attr( 'bmlt-minutes-latest-' . $post->ID ) . '">';
+		if ( $args['show_title'] ) {
+			$out .= '<' . $h . ' class="bmlt-minutes-latest__title">' . esc_html( get_the_title( $post ) ) . '</' . $h . '>';
+		}
+		[ $url, , $type ] = $locked ? [ '', '', '' ] : self::resolve_document( $post->ID );
+		$url              = '' !== $url ? esc_url( $url ) : '';
+
+		$meta = [];
+		if ( $args['show_date'] ) {
+			$date_raw = (string) get_post_meta( $post->ID, self::META_DATE, true );
+			if ( '' !== $date_raw ) {
+				$meta[] = '<span class="bmlt-minutes-latest__date">' . esc_html( (string) mysql2date( get_option( 'date_format', 'F j, Y' ), $date_raw, true ) ) . '</span>';
+			}
+		}
+		if ( $args['download'] && '' !== $url ) {
+			$meta[] = self::latest_open_link( $url, $type );
+		}
+		if ( ! empty( $meta ) ) {
+			$out .= '<p class="bmlt-minutes-latest__meta">' . implode( ' ', $meta ) . '</p>';
+		}
+
+		if ( $locked ) {
+			// WordPress's own form: once the password is entered, this page shows the minutes.
+			return $out . '<div class="bmlt-minutes-latest__locked">' . get_the_password_form( $post ) . '</div></article>';
+		}
+		$text = trim( (string) $post->post_content );
+		if ( '' !== $text ) {
+			$out .= '<div class="bmlt-minutes-latest__text">' . self::latest_post_text( $post ) . '</div>';
+		}
+		if ( '' !== $url ) {
+			$out .= self::latest_document( $post, $url, $type, $args['level'] + 1 );
+		} elseif ( '' === $text ) {
+			$out .= '<p class="bmlt-minutes-latest__none">' . esc_html__( 'These minutes have no document.', 'bmlt-minutes' ) . '</p>';
+		}
+		return $out . '</article>';
+	}
+
+	/**
+	 * A link to download the file, or to open a web page (a Google Doc, say).
+	 */
+	private static function latest_open_link( string $url, string $type ): string {
+		if ( in_array( $type, self::ALLOWED_EXTENSIONS, true ) ) {
+			return '<a class="bmlt-minutes-latest__download" href="' . $url . '" download>' . esc_html(
+				sprintf(
+					/* translators: %s: file type, such as PDF or DOCX */
+					__( 'Download (%s)', 'bmlt-minutes' ),
+					strtoupper( $type )
+				)
+			) . '</a>';
+		}
+		return '<a class="bmlt-minutes-latest__download" href="' . $url . '" target="_blank" rel="noopener">' . esc_html__( 'Open the document', 'bmlt-minutes' ) . '</a>';
+	}
+
+	/**
+	 * The minutes' own text, as WordPress shows a post's content (the global post is set for the_content filters).
+	 */
+	private static function latest_post_text( WP_Post $post ): string {
+		global $wp_query;
+		$saved = $GLOBALS['post'] ?? null;
+		// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- the_content filters read the global post; restored below.
+		$GLOBALS['post'] = $post;
+		setup_postdata( $post );
+		$html = (string) apply_filters( 'the_content', (string) $post->post_content );
+		// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Restoring it.
+		$GLOBALS['post'] = $saved;
+		if ( $saved instanceof WP_Post ) {
+			setup_postdata( $saved );
+		} elseif ( $wp_query instanceof WP_Query ) {
+			$wp_query->reset_postdata();
+		}
+		return $html;
+	}
+
+	/**
+	 * The document, whole: the PDF viewer, converted HTML, or a link when it cannot be shown in the page.
+	 */
+	private static function latest_document( WP_Post $post, string $url, string $type, int $top ): string {
+		if ( 'pdf' === $type ) {
+			wp_enqueue_script( 'bmlt-minutes-latest' );
+			$title = get_the_title( $post );
+			$out   = '<div class="bmlt-minutes-latest__pdf" data-bmlt-minutes-pdf="' . $url . '" data-bmlt-minutes-pdfjs="' . esc_url( BMLT_MINUTES_URL . 'pdfjs/' ) . '" data-bmlt-minutes-ver="' . esc_attr( BMLT_MINUTES_VERSION ) . '"';
+			$out  .= ' data-bmlt-minutes-loading="' . esc_attr__( 'Loading the document…', 'bmlt-minutes' ) . '"';
+			$out  .= ' data-bmlt-minutes-error="' . esc_attr__( 'This PDF could not be shown here.', 'bmlt-minutes' ) . '"';
+			/* translators: 1: page number, 2: number of pages */
+			$out .= ' data-bmlt-minutes-page="' . esc_attr__( 'Page %1$s of %2$s', 'bmlt-minutes' ) . '">';
+			// Without JavaScript: the browser's own PDF viewer.
+			$out .= '<noscript><object class="bmlt-minutes-latest__embed" data="' . $url . '" type="application/pdf" aria-label="' . esc_attr( wp_strip_all_tags( $title ) ) . '"><a href="' . $url . '">' . esc_html( $title ) . '</a></object></noscript>';
+			return $out . '</div>';
+		}
+
+		$attachment = (int) get_post_meta( $post->ID, self::META_ATTACHMENT, true );
+		$path       = $attachment ? (string) get_attached_file( $attachment ) : '';
+		if ( '' !== $path && in_array( $type, BMLT_Minutes_Document_HTML::TYPES, true ) ) {
+			$html = BMLT_Minutes_Document_HTML::cached( $path, $type, $top );
+			if ( null !== $html ) {
+				return '<div class="bmlt-minutes-latest__document bmlt-minutes-doc bmlt-minutes-doc--' . esc_attr( $type ) . '">' . $html . '</div>';
+			}
+		}
+
+		$label = in_array( $type, self::ALLOWED_EXTENSIONS, true )
+			? __( 'This document cannot be shown in the page. Download it to read it.', 'bmlt-minutes' )
+			: __( 'This document is on another website.', 'bmlt-minutes' );
+		return '<p class="bmlt-minutes-latest__elsewhere">' . esc_html( $label ) . ' ' . self::latest_open_link( $url, $type ) . '</p>';
+	}
+
+	// -------------------------------------------------------------------------
 	// Settings
 	// -------------------------------------------------------------------------
 
@@ -1481,6 +1711,16 @@ class BMLT_Minutes {
 				<li><code>order</code> — <code>desc</code> <?php esc_html_e( '(newest first)', 'bmlt-minutes' ); ?> | <code>asc</code></li>
 				<li><code>group_by</code> — <code>committee</code> | <code>year</code> | <code>none</code></li>
 				<li><code>show_excerpt</code> — <code>true</code> | <code>false</code></li>
+			</ul>
+
+			<h3><?php esc_html_e( 'The latest minutes, whole', 'bmlt-minutes' ); ?></h3>
+			<p><?php esc_html_e( 'Shows a committee\'s newest minutes in full on the page: PDFs page by page, Word, OpenDocument, Excel, CSV and text files as part of the page.', 'bmlt-minutes' ); ?></p>
+			<code>[bmlt_minutes_latest committee="policy"]</code>
+			<ul style="list-style:disc;padding-left:20px;">
+				<li><code>committee</code> — <?php esc_html_e( 'Slug or comma-separated slugs (sub-committees included). Default: all.', 'bmlt-minutes' ); ?></li>
+				<li><code>date</code> — <code>posted</code> | <code>meeting</code> <?php esc_html_e( '(which minutes are the newest)', 'bmlt-minutes' ); ?></li>
+				<li><code>heading_level</code> — <code>2</code> … <code>5</code></li>
+				<li><code>show_title</code>, <code>show_date</code>, <code>download</code> — <code>true</code> | <code>false</code></li>
 			</ul>
 		</div>
 		<?php

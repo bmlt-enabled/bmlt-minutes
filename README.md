@@ -71,6 +71,19 @@ Leave every box unchecked for access to all committees. Administrators are never
 
 For a region hosting several areas, nest each area's committees under the area (Area A → Hospitals & Institutions, Area B → Hospitals & Institutions) and scope each area's uploader to their area. Grouped output labels nested committees by their full path, so same-named sub-committees stay separate.
 
+## The latest minutes, whole
+
+`[bmlt_minutes_latest committee="policy"]` shows a committee's newest minutes in full on the page. PDFs are drawn page by page with the bundled [PDF.js](https://mozilla.github.io/pdf.js/) (`pdfjs/`, Apache-2.0) with selectable, searchable text; Word, OpenDocument, Excel, CSV and text files are converted to HTML on the server (cached as transients until the file changes); post text shows as content; web links and old binary formats get a link; locked minutes show the password form.
+
+| Attribute       | Default  | Description                                                                 |
+|-----------------|----------|-----------------------------------------------------------------------------|
+| `committee`     | _all_    | Slug or comma-separated slugs (sub-committees included).                    |
+| `date`          | `posted` | Newest by `posted` date or by `meeting` date.                               |
+| `heading_level` | `2`      | The title's heading level (2–5); the document's headings go below it.       |
+| `show_title`    | `true`   | `false` hides the title.                                                    |
+| `show_date`     | `true`   | `false` hides the meeting date.                                             |
+| `download`      | `true`   | `false` hides the Download link.                                            |
+
 ## Supported File Types
 
 PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, ODT, ODS, ODP, TXT, RTF, CSV — plus arbitrary URLs (Google Docs, Dropbox, OneDrive, anywhere else).

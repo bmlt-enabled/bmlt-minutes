@@ -58,3 +58,27 @@ foreach ( wp_roles()->roles as $bmlt_minutes_role_slug => $bmlt_minutes_role_dat
 		$bmlt_minutes_role->remove_cap( $bmlt_minutes_cap );
 	}
 }
+
+// Documents [bmlt_minutes_latest] converted to HTML (BMLT_Minutes_Document_HTML::cached()), on every site.
+$bmlt_minutes_drop_docs = static function (): void {
+	global $wpdb;
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Transients have no "delete by prefix" API; this runs once, on uninstall.
+	$names = $wpdb->get_col( $wpdb->prepare( "SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE %s", $wpdb->esc_like( '_transient_bmlt_minutes_doc_' ) . '%' ) );
+	foreach ( $names as $name ) {
+		delete_transient( substr( (string) $name, strlen( '_transient_' ) ) );
+	}
+};
+if ( is_multisite() ) {
+	foreach ( get_sites(
+		[
+			'fields' => 'ids',
+			'number' => 0,
+		]
+	) as $bmlt_minutes_site ) {
+		switch_to_blog( (int) $bmlt_minutes_site );
+		$bmlt_minutes_drop_docs();
+		restore_current_blog();
+	}
+} else {
+	$bmlt_minutes_drop_docs();
+}
