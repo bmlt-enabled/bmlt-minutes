@@ -51,6 +51,21 @@ Shortcode attributes:
 * `group_by` — `committee` (default), `year`, or `none`.
 * `show_excerpt` — `true` or `false` (default). Shows each post's excerpt under the link.
 
+= The latest minutes, whole =
+
+`[bmlt_minutes_latest committee="policy"]` shows a committee's newest minutes in full on the page, for an "Area Policy" or "Last month's minutes" page that always shows the newest version without anyone downloading it:
+
+* PDFs are drawn page by page in the browser by the included PDF.js, on computers and phones, with selectable, searchable text and working links. Pages draw as they scroll into view.
+* Word (.docx), OpenDocument (.odt, .ods), Excel (.xlsx), CSV and text files become part of the page: headings, emphasis, links, lists numbered as in the document, and tables. A Word table of contents links to its headings. Converted documents are cached until the file changes.
+* Minutes written in the post itself show their text; Google Docs, other links and old .doc/.xls/.ppt files get a link; password-protected minutes show WordPress's password form.
+
+Attributes:
+
+* `committee` — Slug or comma-separated slugs (sub-committees included). Defaults to all committees.
+* `date` — `posted` (default, the latest posted) or `meeting` (the latest Meeting Date).
+* `heading_level` — The title's heading level, `2` (default) to `5`; the document's headings take the levels below.
+* `show_title`, `show_date`, `download` — `true` (default) or `false`.
+
 == Installation ==
 
 1. Upload the plugin files to `/wp-content/plugins/bmlt-minutes/`, or install via the Plugins screen.
@@ -103,6 +118,10 @@ This suits a region hosting minutes for several areas: nest each area's committe
 = Will uninstalling delete my minutes? =
 
 Yes. The `uninstall.php` script removes the plugin's settings and deletes all minutes posts when you delete the plugin via the WordPress admin. Deactivate instead of uninstalling if you want to preserve them.
+
+= What is in the pdfjs folder? =
+
+[PDF.js](https://mozilla.github.io/pdf.js/) 6.5.438 by Mozilla (Apache License 2.0, unmodified; its licence is `pdfjs/LICENSE`), which `[bmlt_minutes_latest]` uses to draw PDFs in the page. It runs in the visitor's browser and loads only from your site.
 
 == Screenshots ==
 

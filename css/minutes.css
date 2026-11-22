@@ -120,3 +120,198 @@
 		margin-left: 1.75em;
 	}
 }
+
+/* [bmlt_minutes_latest]: the newest minutes shown whole. Converted documents use .bmlt-minutes-doc; PDFs .bmlt-minutes-latest__page. */
+
+.bmlt-minutes-latest__meta {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.25em 1em;
+	align-items: baseline;
+	margin: 0 0 1em;
+	font-size: 0.9em;
+	color: #555;
+}
+
+.bmlt-minutes-latest__download {
+	font-weight: 600;
+}
+
+.bmlt-minutes-latest__loading,
+.bmlt-minutes-latest__error,
+.bmlt-minutes-latest__none,
+.bmlt-minutes-latest__elsewhere {
+	padding: 0.75em 1em;
+	border-left: 4px solid #c3c4c7;
+	background: #f6f7f7;
+}
+
+.bmlt-minutes-latest__error {
+	border-left-color: #dba617;
+}
+
+.bmlt-minutes-latest__embed {
+	display: block;
+	width: 100%;
+	height: 80vh;
+	min-height: 500px;
+}
+
+/* ---- Converted documents (Word, OpenDocument, Excel, CSV, text) ---- */
+
+.bmlt-minutes-doc {
+	overflow-wrap: anywhere;
+}
+
+.bmlt-minutes-doc__center {
+	text-align: center;
+}
+
+.bmlt-minutes-doc__right {
+	text-align: right;
+}
+
+.bmlt-minutes-doc__table {
+	overflow-x: auto;
+	margin: 0 0 1.25em;
+}
+
+.bmlt-minutes-doc table {
+	border-collapse: collapse;
+	width: auto;
+	min-width: 50%;
+	font-size: 0.95em;
+}
+
+.bmlt-minutes-doc caption {
+	caption-side: top;
+	text-align: left;
+	font-weight: 600;
+	padding: 0.25em 0;
+}
+
+.bmlt-minutes-doc td {
+	border: 1px solid #dcdcde;
+	padding: 0.3em 0.6em;
+	vertical-align: top;
+	overflow-wrap: normal;
+}
+
+.bmlt-minutes-doc td p {
+	margin: 0 0 0.4em;
+}
+
+/* ---- PDFs, page by page ---- */
+
+.bmlt-minutes-latest__pages {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+.bmlt-minutes-latest__page {
+	position: relative;
+	width: 100%;
+	overflow: hidden;
+	background: #fff;
+	box-shadow: 0 0 0 1px #dcdcde, 0 2px 6px rgba(0, 0, 0, 0.08);
+	--scale-round-x: 1px;
+	--scale-round-y: 1px;
+}
+
+.bmlt-minutes-latest__page canvas {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+}
+
+.bmlt-minutes-latest__link {
+	position: absolute;
+	z-index: 2;
+}
+
+.bmlt-minutes-latest__link:focus-visible {
+	outline: 2px solid #2271b1;
+}
+
+/* PDF.js text layer (from PDF.js 6.5's pdf_viewer.css, Apache-2.0): invisible text over the page, for selecting,
+   copying and Find. */
+.bmlt-minutes-latest .textLayer {
+	position: absolute;
+	text-align: initial;
+	inset: 0;
+	overflow: clip;
+	opacity: 1;
+	line-height: 1;
+	letter-spacing: normal;
+	word-spacing: normal;
+	-webkit-text-size-adjust: none;
+	text-size-adjust: none;
+	forced-color-adjust: none;
+	transform-origin: 0 0;
+	z-index: 1;
+	--min-font-size: 1;
+	--text-scale-factor: calc(var(--total-scale-factor) * var(--min-font-size));
+	--min-font-size-inv: calc(1 / var(--min-font-size));
+}
+
+.bmlt-minutes-latest .textLayer span,
+.bmlt-minutes-latest .textLayer br {
+	color: transparent;
+	position: absolute;
+	white-space: pre;
+	cursor: text;
+	transform-origin: 0% 0%;
+	-webkit-user-select: text;
+	user-select: text;
+}
+
+.bmlt-minutes-latest .textLayer > :not(.markedContent),
+.bmlt-minutes-latest .textLayer .markedContent span:not(.markedContent) {
+	z-index: 1;
+	--font-height: 0;
+	font-size: calc(var(--text-scale-factor) * var(--font-height));
+	--scale-x: 1;
+	--rotate: 0deg;
+	transform: rotate(var(--rotate)) scaleX(var(--scale-x)) scale(var(--min-font-size-inv));
+}
+
+.bmlt-minutes-latest .textLayer .markedContent {
+	display: contents;
+}
+
+.bmlt-minutes-latest .textLayer ::selection {
+	background: rgba(0, 0, 255, 0.25);
+	color: transparent;
+}
+
+.bmlt-minutes-latest .textLayer br::selection {
+	background: transparent;
+}
+
+.bmlt-minutes-latest .textLayer .endOfContent {
+	display: block;
+	position: absolute;
+	inset: 100% 0 0;
+	z-index: 0;
+	cursor: default;
+	-webkit-user-select: none;
+	user-select: none;
+}
+
+.bmlt-minutes-latest .textLayer.selecting .endOfContent {
+	top: 0;
+}
+
+@media print {
+	.bmlt-minutes-latest__page {
+		break-inside: avoid;
+		box-shadow: none;
+	}
+}
+
+.bmlt-minutes-doc .bmlt-minutes-doc__nest,
+.bmlt-minutes-doc li.bmlt-minutes-doc__nest {
+	list-style: none;
+}

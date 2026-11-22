@@ -14,8 +14,11 @@ Sibling plugins to mirror in style and tone: `../crumb/`, `../fetch-meditation-w
 minutes.php                Main plugin file — singleton BMLT_Minutes class, all logic lives here
 uninstall.php              Removes options + deletes all bmlt_minutes posts when the plugin is deleted
 index.php                  Empty silence file
-css/minutes.css            Frontend list styles (used by [bmlt_minutes] shortcode)
+css/minutes.css            Frontend styles ([bmlt_minutes] list, [bmlt_minutes_latest] document view)
 js/admin.js                wp.media file-picker wiring for the Minutes Document meta box
+js/latest.js               [bmlt_minutes_latest]: draws a PDF page by page with PDF.js (lazy canvases + text layer)
+includes/class-bmlt-minutes-document-html.php  docx/odt/xlsx/ods/csv/txt → HTML for [bmlt_minutes_latest]
+pdfjs/                     PDF.js 6.5.438 legacy build, unmodified (Apache-2.0); .mjs renamed .js for server MIME types
 assets/                    WordPress.org banner + icon + screenshots (gitattribute: export-ignore)
 readme.txt                 WordPress.org readme (Markdown-ish, dot-org-flavored)
 README.md                  GitHub README
@@ -129,6 +132,10 @@ Three layers, all reading from `BMLT_Minutes::max_upload_bytes()`:
 3. `js/admin.js` `frame.on('select')` — pre-flight alert when picking an already-uploaded oversize attachment.
 
 All three are scoped via `is_minutes_upload_context()` — uploads outside the Minutes editor are not affected. The context detection covers three cases: `get_current_screen()` (regular admin), `$_REQUEST['post_id']` (async-upload.php), and `HTTP_REFERER` parsing (Media frame popups).
+
+### Latest-minutes shortcode
+
+`[bmlt_minutes_latest]` (`render_latest_shortcode()`): the newest published minutes for `committee` (slugs, children included) by `date="posted|meeting"`, shown whole. PDFs → `.bmlt-minutes-latest__pdf` with `data-bmlt-minutes-*` attributes that `js/latest.js` reads; it dynamic-imports `pdfjs/pdf.min.js` only when a PDF is on the page (a `<noscript>` `<object>` covers no-JS). Attachments of `BMLT_Minutes_Document_HTML::TYPES` → `BMLT_Minutes_Document_HTML::cached()`, which converts with `ZipArchive` + `DOMDocument` (`LIBXML_NONET`, no entity expansion, 50 MB per-part and 20 MB per-file caps), escapes every text node, runs `wp_kses_post()` and caches the result in a `bmlt_minutes_doc_*` transient keyed by path, mtime, size and plugin version (uninstall.php deletes them). Locked posts render `get_the_password_form()` and never resolve the document. `$latest_depth` stops minutes whose content contains the shortcode from recursing.
 
 ### Shortcode
 
