@@ -120,3 +120,69 @@
 		margin-left: 1.75em;
 	}
 }
+
+/* [bmlt_minutes_by_month] */
+
+.bmlt-minutes-archive__committee + .bmlt-minutes-archive__committee {
+	margin-top: 2em;
+}
+
+.bmlt-minutes-archive__year-title {
+	margin: 1em 0 0.5em;
+	font-size: 1.05em;
+}
+
+.bmlt-minutes-archive__month {
+	margin: 0.5em 0;
+	border: 1px solid #e5e5e5;
+	border-radius: 4px;
+	padding: 0 0.75em;
+}
+
+.bmlt-minutes-archive__month[open] {
+	padding-bottom: 0.75em;
+}
+
+.bmlt-minutes-archive__month-summary {
+	cursor: pointer;
+	padding: 0.5em 0;
+	list-style-position: inside;
+}
+
+.bmlt-minutes-archive__month-summary:focus-visible {
+	outline: 2px solid #2271b1;
+	outline-offset: 2px;
+}
+
+.bmlt-minutes-archive__month-title {
+	display: inline;
+	margin: 0;
+	font-size: 1em;
+	font-weight: 600;
+}
+
+.bmlt-minutes-archive__count,
+.bmlt-minutes-archive__date {
+	font-size: 0.85em;
+	color: #777;
+}
+
+.bmlt-minutes-archive__count {
+	margin-left: 0.5em;
+}
+
+.bmlt-minutes-archive__doc {
+	margin: 0.75em 0 1.25em;
+}
+
+.bmlt-minutes-archive__doc .wp-block-file {
+	margin-bottom: 0;
+}
+
+.bmlt-minutes-archive__date {
+	margin: 0 0 0.25em;
+}
+
+.bmlt-minutes-archive__docs .bmlt-minutes__list {
+	margin: 0.5em 0;
+}

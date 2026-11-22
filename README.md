@@ -50,6 +50,27 @@ Configured under **Minutes → Settings**.
 | `group_by`     | `committee` | `committee`, `year`, or `none`.                              |
 | `show_excerpt` | `false`     | `true` to show each post's excerpt under the link.           |
 
+## Monthly Archive
+
+```
+[bmlt_minutes_by_month]
+[bmlt_minutes_by_month committee="area-service-committee" date="meeting"]
+```
+
+Minutes by committee → year → month. Months are collapsible; only each committee's newest month starts open. Uploaded documents render as core File blocks (title link + Download button), PDFs with an inline preview that core hides where there's no PDF viewer (phones). PDFs in closed months are fetched only when the month is opened. Links (Google Docs etc.) and password-protected minutes render as in `[bmlt_minutes]`.
+
+| Attribute        | Default   | Description                                                                 |
+|------------------|-----------|-----------------------------------------------------------------------------|
+| `committee`      | _all_     | Slug or comma-separated slugs; sub-committees included.                     |
+| `date`           | `posted`  | `posted` (publish month) or `meeting` (Meeting Date, else publish date).     |
+| `year`           | _all_     | Restrict to one year (by the chosen date).                                  |
+| `order`          | setting   | `desc` or `asc`; defaults to the Default Sort Order setting.                 |
+| `open`           | `latest`  | `latest`, `all`, or `none` — which months start open.                       |
+| `preview_height` | `500`     | PDF preview height in px; `0` disables previews.                            |
+| `display`        | `file`    | `file` (File blocks) or `list` (plain links).                               |
+| `heading_level`  | `3`       | Committee heading level `2`–`4`; years and months use the next two.          |
+| `show_date`      | `true`    | Meeting date above each File block.                                         |
+
 ## Password Protection
 
 Some service bodies redact personal details from minutes before posting, others share unredacted minutes with members only. Each minutes post can be optionally locked:

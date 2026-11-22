@@ -22,6 +22,7 @@ Features:
 * Meeting-date field separate from publish-date, with sorting and year-grouping
 * Supports PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, ODT, ODS, ODP, TXT, RTF, CSV, plus arbitrary URLs (Google Docs, Dropbox, OneDrive)
 * Single `[bmlt_minutes]` shortcode with grouping, filtering, and limiting
+* `[bmlt_minutes_by_month]` archive: committee → year → collapsible month, documents shown as File blocks with inline PDF previews
 * Optional **password protection** per post — for minutes that still contain unredacted personal details
 * Dedicated **Minutes Manager** role — grant trusted servants access to manage minutes only, without broader site access
 * Configurable per-file upload size limit (default 10 MB, scoped to the Minutes editor only)
@@ -50,6 +51,22 @@ Shortcode attributes:
 * `order` — `desc` (default, newest first) or `asc`.
 * `group_by` — `committee` (default), `year`, or `none`.
 * `show_excerpt` — `true` or `false` (default). Shows each post's excerpt under the link.
+
+= Monthly archive =
+
+`[bmlt_minutes_by_month]` lists minutes under each committee, then by year, then by month. Each month is a collapsible section; only each committee's newest month starts open. Inside, every uploaded document shows as a WordPress File block (title link and Download button); PDFs also get an inline preview, which WordPress hides on browsers without a PDF viewer such as phones. A closed month's PDFs are only downloaded when it's opened. Google Docs and other links, and password-protected minutes, appear as in `[bmlt_minutes]`.
+
+* `committee` — Slug or comma-separated slugs; sub-committees included.
+* `date` — `posted` (default, the month the minutes were published) or `meeting` (Meeting Date, falling back to the publish date).
+* `year` — Restrict to one year (by the chosen date).
+* `order` — `desc` or `asc`. Defaults to the Default Sort Order setting.
+* `open` — `latest` (default), `all`, or `none`: which months start open.
+* `preview_height` — PDF preview height in pixels (default `500`; `0` for no previews).
+* `display` — `file` (default, File blocks) or `list` (plain links).
+* `heading_level` — Committee heading level, `2`–`4` (default `3`); years and months use the next two.
+* `show_date` — `true` (default) or `false`: the meeting date above each File block.
+
+Minutes filed under several committees appear under each. Committee headings use the committee's name, or its full path when two listed committees share a name.
 
 == Installation ==
 
