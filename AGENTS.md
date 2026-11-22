@@ -136,6 +136,8 @@ All three are scoped via `is_minutes_upload_context()` — uploads outside the M
 
 The singular `bmlt_minutes` permalink is also public — used as the unlock surface for password-protected items, and as a fallback link target when neither attachment nor URL is set.
 
+`[bmlt_minutes_by_month]` (`render_month_archive()`, constant `SHORTCODE_BY_MONTH`) — committee → year → month archive. Months are `<details>`; only each committee's newest month gets `open`. A post is listed under **every** committee it carries (unlike `[bmlt_minutes]`'s first-term grouping); headings use the plain term name unless two listed committees share it (`month_archive_labels()`), then the full path. Documents whose type is in `ALLOWED_EXTENSIONS` render through `render_block()` as a `core/file` block (`render_file_block()`), so core adds its Interactivity API directives that hide the PDF `<object>` where there's no PDF viewer; everything else (links, locked posts) falls back to `render_item()`. In closed months the PDF address sits in `data-bmlt-minutes-src` and `js/minutes-by-month.js` swaps in a copy of the `<object>` with `data` set when the month opens — Chrome won't load an `<object>` whose `data` is set after creation, and hidden embeds are skipped. The script is only enqueued when a deferred preview is rendered. Style hooks: `.bmlt-minutes-archive__*` in `css/minutes.css`.
+
 Type → dashicon mapping lives in `dashicon_for_type()`. To add a new file type:
 
 1. Add extension to `ALLOWED_EXTENSIONS`.

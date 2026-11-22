@@ -32,6 +32,8 @@ class BMLT_Minutes {
 	const NONCE_FIELD     = 'bmlt_minutes_meta_nonce';
 	const NONCE_ACTION    = 'bmlt_minutes_meta_save';
 
+	const SHORTCODE_BY_MONTH = 'bmlt_minutes_by_month';
+
 	const DEFAULT_COMMITTEES = [
 		'Area Service Committee',
 		'Regional Service Committee',
@@ -125,6 +127,7 @@ class BMLT_Minutes {
 		add_action( 'pre_get_posts', [ static::class, 'admin_orderby_meeting_date' ] );
 
 		add_shortcode( 'bmlt_minutes', [ static::class, 'render_shortcode' ] );
+		add_shortcode( self::SHORTCODE_BY_MONTH, [ static::class, 'render_month_archive' ] );
 
 		add_filter( 'upload_size_limit', [ static::class, 'cap_upload_size' ] );
 		add_filter( 'wp_handle_upload_prefilter', [ static::class, 'reject_oversize_upload' ] );
@@ -1177,6 +1180,13 @@ class BMLT_Minutes {
 			[ 'dashicons' ],
 			BMLT_MINUTES_VERSION
 		);
+		wp_register_script(
+			'bmlt-minutes-by-month',
+			BMLT_MINUTES_URL . 'js/minutes-by-month.js',
+			[],
+			BMLT_MINUTES_VERSION,
+			[ 'in_footer' => true ]
+		);
 	}
 
 	// -------------------------------------------------------------------------
@@ -1376,6 +1386,359 @@ class BMLT_Minutes {
 	}
 
 	// -------------------------------------------------------------------------
+	// Month archive shortcode
+	// -------------------------------------------------------------------------
+
+	/**
+	 * [bmlt_minutes_by_month] — minutes by committee, then year, then month. Each
+	 * month is a collapsible <details>; only each committee's newest month starts
+	 * open. Documents render as the core File block, so PDFs get WordPress's own
+	 * inline preview (hidden by core on browsers without a PDF viewer) and every
+	 * file gets its Download button.
+	 */
+	public static function render_month_archive( $atts ): string {
+		$atts = shortcode_atts(
+			[
+				'committee'      => '',
+				'date'           => 'posted',
+				'year'           => '',
+				'order'          => get_option( 'bmlt_minutes_sort_order', 'desc' ),
+				'open'           => 'latest',
+				'heading_level'  => '3',
+				'show_date'      => 'true',
+				'display'        => 'file',
+				'preview_height' => '500',
+			],
+			is_array( $atts ) ? $atts : [],
+			self::SHORTCODE_BY_MONTH
+		);
+
+		$open    = strtolower( trim( (string) $atts['open'] ) );
+		$level   = (int) $atts['heading_level'];
+		$preview = trim( (string) $atts['preview_height'] );
+		$year    = trim( (string) $atts['year'] );
+		$args    = [
+			'committees' => array_values( array_unique( array_filter( array_map( 'sanitize_title', explode( ',', (string) $atts['committee'] ) ) ) ) ),
+			'date'       => 'meeting' === strtolower( trim( (string) $atts['date'] ) ) ? 'meeting' : 'posted',
+			'year'       => 1 === preg_match( '/^\d{4}$/', $year ) ? (int) $year : 0,
+			'order'      => 'asc' === strtolower( trim( (string) $atts['order'] ) ) ? 'asc' : 'desc',
+			'open'       => in_array( $open, [ 'latest', 'all', 'none' ], true ) ? $open : 'latest',
+			// Committee heading at this level; year and month take the next two.
+			'level'      => $level >= 2 && $level <= 4 ? $level : 3,
+			'show_date'  => false !== filter_var( $atts['show_date'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE ),
+			'display'    => 'list' === strtolower( trim( (string) $atts['display'] ) ) ? 'list' : 'file',
+			'preview'    => ctype_digit( $preview ) && (int) $preview <= 5000 ? (int) $preview : 500,
+		];
+
+		// Registered on wp_enqueue_scripts; register here too for content rendered before it (and in tests).
+		if ( ! wp_style_is( 'bmlt-minutes', 'registered' ) ) {
+			self::frontend_assets();
+		}
+		wp_enqueue_style( 'bmlt-minutes' );
+
+		$allowed = self::month_archive_allowed_terms( $args['committees'] );
+		$groups  = [] === $allowed ? [] : self::month_archive_groups( self::month_archive_posts( $args, $allowed ), $args, $allowed );
+		if ( [] === $groups ) {
+			return '<div class="bmlt-minutes bmlt-minutes--empty">' . esc_html__( 'No minutes published yet.', 'bmlt-minutes' ) . '</div>';
+		}
+		return self::render_month_archive_groups( $groups, $args );
+	}
+
+	/**
+	 * Term IDs the archive is limited to, sub-committees included; null for all.
+	 * Slugs that match nothing give [] so a typo shows nothing instead of everything.
+	 *
+	 * @param string[] $slugs
+	 * @return int[]|null
+	 */
+	private static function month_archive_allowed_terms( array $slugs ): ?array {
+		if ( [] === $slugs ) {
+			return null;
+		}
+		$ids = [];
+		foreach ( $slugs as $slug ) {
+			$term = get_term_by( 'slug', $slug, self::TAX_COMMITTEE );
+			if ( ! $term instanceof WP_Term ) {
+				continue;
+			}
+			$ids[] = (int) $term->term_id;
+			$kids  = get_term_children( (int) $term->term_id, self::TAX_COMMITTEE );
+			if ( is_array( $kids ) ) {
+				$ids = array_merge( $ids, array_map( 'intval', $kids ) );
+			}
+		}
+		return array_values( array_unique( $ids ) );
+	}
+
+	/**
+	 * @param int[]|null $allowed
+	 * @return WP_Post[]
+	 */
+	private static function month_archive_posts( array $args, ?array $allowed ): array {
+		$query = [
+			'post_type'           => self::CPT,
+			'post_status'         => 'publish',
+			'posts_per_page'      => -1,
+			'no_found_rows'       => true,
+			'ignore_sticky_posts' => true,
+			'orderby'             => 'date',
+			'order'               => 'DESC',
+		];
+		// phpcs:disable WordPress.DB.SlowDBQuery.slow_db_query_tax_query -- Filtering by committee is the attribute's purpose.
+		if ( null !== $allowed ) {
+			$query['tax_query'] = [
+				[
+					'taxonomy'         => self::TAX_COMMITTEE,
+					'field'            => 'term_id',
+					'terms'            => $allowed,
+					'include_children' => false,
+				],
+			];
+		}
+		// phpcs:enable WordPress.DB.SlowDBQuery.slow_db_query_tax_query
+		if ( $args['year'] > 0 && 'posted' === $args['date'] ) {
+			$query['date_query'] = [ [ 'year' => $args['year'] ] ];
+		}
+		return array_values( array_filter( ( new WP_Query( $query ) )->posts, static fn( $p ) => $p instanceof WP_Post ) );
+	}
+
+	/**
+	 * The date a post is filed under (Y-m-d H:i:s): its publish date, or with
+	 * date="meeting" a valid meeting date at the publish time of day, so minutes of
+	 * one meeting keep their posting order.
+	 */
+	private static function month_archive_filing_date( WP_Post $post, string $date ): string {
+		$posted = (string) $post->post_date;
+		if ( 'meeting' !== $date ) {
+			return $posted;
+		}
+		$meeting = (string) get_post_meta( $post->ID, self::META_DATE, true );
+		if ( 1 !== preg_match( '/^(\d{4})-(\d{2})-(\d{2})$/', $meeting, $m ) || ! checkdate( (int) $m[2], (int) $m[3], (int) $m[1] ) ) {
+			return $posted;
+		}
+		return $meeting . substr( $posted, 10 );
+	}
+
+	/**
+	 * Committee → year → month → posts, every level sorted. Minutes filed under
+	 * several committees appear under each; uncategorized minutes come last.
+	 *
+	 * @param WP_Post[]  $posts
+	 * @param int[]|null $allowed
+	 * @return list<array{id:int,label:string,years:array<string,array<string,WP_Post[]>>}>
+	 */
+	private static function month_archive_groups( array $posts, array $args, ?array $allowed ): array {
+		$tree  = [];
+		$terms = [];
+		foreach ( $posts as $post ) {
+			$when = self::month_archive_filing_date( $post, $args['date'] );
+			$year = substr( $when, 0, 4 );
+			if ( $args['year'] > 0 && (int) $year !== $args['year'] ) {
+				continue;
+			}
+			$keys       = [];
+			$post_terms = get_the_terms( $post->ID, self::TAX_COMMITTEE );
+			foreach ( is_array( $post_terms ) ? $post_terms : [] as $term ) {
+				if ( null === $allowed || in_array( (int) $term->term_id, $allowed, true ) ) {
+					$keys[]                        = (int) $term->term_id;
+					$terms[ (int) $term->term_id ] = $term;
+				}
+			}
+			if ( [] === $keys ) {
+				if ( null !== $allowed ) {
+					continue;
+				}
+				$keys[] = 0;
+			}
+			foreach ( $keys as $key ) {
+				$tree[ $key ][ $year ][ substr( $when, 5, 2 ) ][] = [ $when, $post ];
+			}
+		}
+
+		$asc    = 'asc' === $args['order'];
+		$by_key = static fn( $a, $b ): int => $asc ? strcmp( (string) $a, (string) $b ) : strcmp( (string) $b, (string) $a );
+		$labels = self::month_archive_labels( $terms );
+		$groups = [];
+		foreach ( $tree as $key => $years ) {
+			uksort( $years, $by_key );
+			foreach ( $years as $y => $months ) {
+				uksort( $months, $by_key );
+				foreach ( $months as $m => $items ) {
+					usort(
+						$items,
+						static function ( array $a, array $b ) use ( $asc ): int {
+							$cmp = $asc ? strcmp( $a[0], $b[0] ) : strcmp( $b[0], $a[0] );
+							return 0 !== $cmp ? $cmp : strnatcasecmp( (string) $a[1]->post_title, (string) $b[1]->post_title );
+						}
+					);
+					$months[ $m ] = array_column( $items, 1 );
+				}
+				$years[ $y ] = $months;
+			}
+			$groups[] = [
+				'id'    => (int) $key,
+				'label' => 0 === $key ? __( 'Uncategorized', 'bmlt-minutes' ) : $labels[ $key ],
+				'years' => $years,
+			];
+		}
+		usort(
+			$groups,
+			static function ( array $a, array $b ): int {
+				if ( ( 0 === $a['id'] ) !== ( 0 === $b['id'] ) ) {
+					return 0 === $a['id'] ? 1 : -1;
+				}
+				return strnatcasecmp( $a['label'], $b['label'] );
+			}
+		);
+		return $groups;
+	}
+
+	/**
+	 * Headings use the committee's own name; only names shared by two listed
+	 * committees fall back to the full path (primary_committee_label() style).
+	 *
+	 * @param array<int,WP_Term> $terms
+	 * @return array<int,string>
+	 */
+	private static function month_archive_labels( array $terms ): array {
+		$names = array_map( static fn( WP_Term $t ): string => html_entity_decode( (string) $t->name, ENT_QUOTES, 'UTF-8' ), $terms );
+		$count = array_count_values( array_map( 'strtolower', $names ) );
+		$out   = [];
+		foreach ( $names as $id => $name ) {
+			if ( $count[ strtolower( $name ) ] < 2 ) {
+				$out[ $id ] = $name;
+				continue;
+			}
+			$path = [ $name ];
+			foreach ( get_ancestors( $id, self::TAX_COMMITTEE, 'taxonomy' ) as $ancestor_id ) {
+				$ancestor = get_term( (int) $ancestor_id, self::TAX_COMMITTEE );
+				if ( $ancestor instanceof WP_Term ) {
+					array_unshift( $path, html_entity_decode( (string) $ancestor->name, ENT_QUOTES, 'UTF-8' ) );
+				}
+			}
+			$out[ $id ] = implode( ' / ', $path );
+		}
+		return $out;
+	}
+
+	private static function render_month_archive_groups( array $groups, array $args ): string {
+		global $wp_locale;
+		$h1  = 'h' . $args['level'];
+		$h2  = 'h' . ( $args['level'] + 1 );
+		$h3  = 'h' . ( $args['level'] + 2 );
+		$out = '<div class="bmlt-minutes bmlt-minutes-archive">';
+		foreach ( $groups as $group ) {
+			$out .= '<section class="bmlt-minutes-archive__committee">';
+			$out .= '<' . $h1 . ' class="bmlt-minutes__group bmlt-minutes-archive__committee-title">' . esc_html( $group['label'] ) . '</' . $h1 . '>';
+			// The newest month, whichever way the list is sorted.
+			$newest_year  = (string) max( array_map( 'strval', array_keys( $group['years'] ) ) );
+			$newest_month = (string) max( array_map( 'strval', array_keys( $group['years'][ $newest_year ] ) ) );
+			foreach ( $group['years'] as $year => $months ) {
+				$out .= '<div class="bmlt-minutes-archive__year">';
+				$out .= '<' . $h2 . ' class="bmlt-minutes-archive__year-title">' . esc_html( (string) $year ) . '</' . $h2 . '>';
+				foreach ( $months as $month => $posts ) {
+					$open  = 'all' === $args['open'] || ( 'latest' === $args['open'] && (string) $year === $newest_year && (string) $month === $newest_month );
+					$count = count( $posts );
+					$out  .= '<details class="bmlt-minutes-archive__month"' . ( $open ? ' open' : '' ) . '>';
+					$out  .= '<summary class="bmlt-minutes-archive__month-summary"><' . $h3 . ' class="bmlt-minutes-archive__month-title">' . esc_html( (string) $wp_locale->get_month( (string) $month ) ) . '</' . $h3 . '>';
+					$out  .= ' <span class="bmlt-minutes-archive__count">' . esc_html(
+						sprintf(
+							/* translators: %s: number of documents in the month */
+							_n( '%s document', '%s documents', $count, 'bmlt-minutes' ),
+							number_format_i18n( $count )
+						)
+					) . '</span></summary>';
+					$out  .= self::render_month_documents( $posts, $args, $open );
+					$out  .= '</details>';
+				}
+				$out .= '</div>';
+			}
+			$out .= '</section>';
+		}
+		return $out . '</div>';
+	}
+
+	/**
+	 * Files as File blocks; links (Google Docs etc.) and locked posts in the
+	 * regular [bmlt_minutes] list style via render_item().
+	 *
+	 * @param WP_Post[] $posts
+	 */
+	private static function render_month_documents( array $posts, array $args, bool $open ): string {
+		$out  = '<div class="bmlt-minutes-archive__docs">';
+		$list = '';
+		foreach ( $posts as $post ) {
+			$block = 'file' === $args['display'] ? self::render_file_block( $post, $args, $open ) : '';
+			if ( '' === $block ) {
+				$list .= self::render_item( $post, false );
+				continue;
+			}
+			if ( '' !== $list ) {
+				$out .= '<ul class="bmlt-minutes__list">' . $list . '</ul>';
+				$list = '';
+			}
+			$out .= $block;
+		}
+		if ( '' !== $list ) {
+			$out .= '<ul class="bmlt-minutes__list">' . $list . '</ul>';
+		}
+		return $out . '</div>';
+	}
+
+	/**
+	 * A core/file block for the post's document, rendered through render_block()
+	 * so core adds its preview-hiding directives and enqueues its view module.
+	 * '' for locked posts, missing documents and non-file links. In a closed month
+	 * the PDF address waits in data-bmlt-minutes-src until the month is opened
+	 * (js/minutes-by-month.js), so a long archive doesn't fetch every PDF.
+	 */
+	private static function render_file_block( WP_Post $post, array $args, bool $load ): string {
+		if ( post_password_required( $post ) ) {
+			return '';
+		}
+		[ $url, , $type ] = self::resolve_document( $post->ID );
+		if ( '' === esc_url( $url ) || ! in_array( $type, self::ALLOWED_EXTENSIONS, true ) ) {
+			return '';
+		}
+		$title   = get_the_title( $post );
+		$id      = wp_unique_id( 'wp-block-file--media-bmlt-minutes-' );
+		$preview = 'pdf' === $type && $args['preview'] > 0;
+		$attrs   = [];
+		$html    = '<div class="wp-block-file">';
+		if ( $preview ) {
+			$attrs = [
+				'displayPreview' => true,
+				'previewHeight'  => $args['preview'],
+			];
+			$html .= '<object class="wp-block-file__embed" ' . ( $load ? 'data' : 'data-bmlt-minutes-src' ) . '="' . esc_url( $url ) . '" type="application/pdf" style="width:100%;height:' . (int) $args['preview'] . 'px" aria-label="' . esc_attr( wp_strip_all_tags( $title ) ) . '"></object>';
+			if ( ! $load ) {
+				wp_enqueue_script( 'bmlt-minutes-by-month' );
+			}
+		}
+		$html .= '<a id="' . esc_attr( $id ) . '" href="' . esc_url( $url ) . '">' . esc_html( $title ) . '</a>';
+		$html .= '<a href="' . esc_url( $url ) . '" class="wp-block-file__button wp-element-button" download aria-describedby="' . esc_attr( $id ) . '">' . esc_html__( 'Download', 'bmlt-minutes' ) . '</a>';
+		$html .= '</div>';
+
+		$out = '<div class="bmlt-minutes-archive__doc bmlt-minutes-archive__doc--' . esc_attr( $type ) . '">';
+		if ( $args['show_date'] ) {
+			$date = (string) get_post_meta( $post->ID, self::META_DATE, true );
+			if ( '' !== $date ) {
+				$out .= '<p class="bmlt-minutes-archive__date">' . esc_html( mysql2date( get_option( 'date_format', 'F j, Y' ), $date, true ) ) . '</p>';
+			}
+		}
+		$out .= render_block(
+			[
+				'blockName'    => 'core/file',
+				'attrs'        => $attrs,
+				'innerBlocks'  => [],
+				'innerHTML'    => $html,
+				'innerContent' => [ $html ],
+			]
+		);
+		return $out . '</div>';
+	}
+
+	// -------------------------------------------------------------------------
 	// Settings
 	// -------------------------------------------------------------------------
 
@@ -1482,6 +1845,11 @@ class BMLT_Minutes {
 				<li><code>group_by</code> — <code>committee</code> | <code>year</code> | <code>none</code></li>
 				<li><code>show_excerpt</code> — <code>true</code> | <code>false</code></li>
 			</ul>
+
+			<h3><?php esc_html_e( 'Monthly archive', 'bmlt-minutes' ); ?></h3>
+			<p><?php esc_html_e( 'Minutes by committee, year and month, with each month collapsible and documents shown as File blocks (PDFs with a preview):', 'bmlt-minutes' ); ?></p>
+			<code>[bmlt_minutes_by_month]</code>
+			<p><?php esc_html_e( 'Attributes: committee, year, order (as above), plus date (posted | meeting), open (latest | all | none), preview_height (pixels, 0 = none), display (file | list), heading_level (2–4), show_date (true | false).', 'bmlt-minutes' ); ?></p>
 		</div>
 		<?php
 	}
